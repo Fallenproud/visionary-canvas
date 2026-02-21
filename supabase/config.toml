@@ -1,0 +1,4 @@
+project_id = "yiwdusaeftkwhotnotyk"
+
+[functions.aiko-chat]
+verify_jwt = false
