@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { ArrowUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChatMessage } from "./ChatMessage";
 import { ModeToggle } from "./ModeToggle";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
@@ -11,9 +12,25 @@ interface ChatPanelProps {
   status: AgentStatus;
   isLoading: boolean;
   onSend: (content: string, mode: AgentMode) => void;
+  onFileClick?: (filePath: string) => void;
 }
 
-export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProps) => {
+const staggerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+};
+
+const fadeUp = {
+  hidden: { y: 15, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { duration: 0.4, ease: "easeOut" as const } },
+};
+
+const scaleIn = {
+  hidden: { scale: 0.5, opacity: 0 },
+  visible: { scale: 1, opacity: 1, transition: { type: "spring" as const, damping: 15, stiffness: 200 } },
+};
+
+export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
   const [planDismissed, setPlanDismissed] = useState(false);
@@ -24,7 +41,6 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Auto-grow textarea
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -32,7 +48,6 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   }, [input]);
 
-  // Detect latest plan from assistant messages
   const latestPlan = useMemo(() => {
     if (planDismissed) return null;
     const planMsg = [...messages].reverse().find(
@@ -41,7 +56,6 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
     return planMsg?.content || null;
   }, [messages, planDismissed]);
 
-  // Reset dismissed state when new messages arrive
   useEffect(() => {
     setPlanDismissed(false);
   }, [messages.length]);
@@ -70,39 +84,54 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-1">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-14 h-14 rounded-2xl bg-accent shadow-lg shadow-accent/20 flex items-center justify-center mb-4">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerVariants}
+            className="flex flex-col items-center justify-center py-20"
+          >
+            <motion.div variants={scaleIn} className="w-14 h-14 rounded-2xl bg-accent shadow-lg shadow-accent/20 flex items-center justify-center mb-4">
               <span className="text-2xl font-bold text-white">A</span>
-            </div>
-            <h2 className="text-2xl font-bold text-foreground drop-shadow-sm mb-2">
+            </motion.div>
+            <motion.h2 variants={fadeUp} className="text-2xl font-bold text-foreground drop-shadow-sm mb-2">
               Hi! I'm AIKO 👋
-            </h2>
-            <p className="text-base text-muted-foreground">
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-base text-muted-foreground">
               Describe what you want to build and I'll help you create it.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
         )}
         {messages.map((msg) => (
-          <ChatMessage key={msg.id} message={msg} />
+          <ChatMessage key={msg.id} message={msg} onFileClick={onFileClick} />
         ))}
       </div>
 
       {/* Plan Card */}
-      {latestPlan && (
-        <PlanCard
-          content={latestPlan}
-          isLoading={isLoading && status.state === "planning"}
-          onApprove={handlePlanApprove}
-          onDismiss={() => setPlanDismissed(true)}
-        />
-      )}
+      <AnimatePresence>
+        {latestPlan && (
+          <motion.div
+            key="plan-card"
+            initial={{ opacity: 0, y: 40, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <PlanCard
+              content={latestPlan}
+              isLoading={isLoading && status.state === "planning"}
+              onApprove={handlePlanApprove}
+              onDismiss={() => setPlanDismissed(true)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Status */}
       {status.state !== "idle" && (
         <AgentStatusIndicator status={status} />
       )}
 
-      {/* ChatGPT-style input bar */}
+      {/* Input bar */}
       <div className="p-3">
         <div className="flex items-end gap-2 rounded-3xl border border-border bg-secondary/50 p-3">
           <ModeToggle mode={mode} onChange={setMode} />
