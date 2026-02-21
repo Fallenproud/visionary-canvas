@@ -81,3 +81,20 @@ All colors MUST be HSL.
     display: none;
   }
 }
+
+/* Sandpack preview overrides - force preview-only, full bleed */
+.sp-wrapper,
+.sp-layout,
+.sp-preview-container,
+.sp-preview-iframe,
+.sp-preview,
+.sp-stack {
+  height: 100% !important;
+  width: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+.sp-preview-actions {
+  display: none !important;
+}
