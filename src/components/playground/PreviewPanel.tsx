@@ -1,8 +1,18 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { SandpackProvider, SandpackPreview } from "@codesandbox/sandpack-react";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 import { Monitor, ExternalLink, RotateCw, Smartphone, Tablet, MonitorSmartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+function StatusBarClock() {
+  const [time, setTime] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const formatted = time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return <span>{formatted}</span>;
+}
 
 type DeviceMode = "mobile" | "tablet" | "desktop";
 
@@ -147,7 +157,7 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
                 <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
                   {/* Status bar row */}
                   <div className="flex items-center justify-between px-5 pt-1 text-[9px] font-semibold text-black/70">
-                    <span>9:41</span>
+                    <StatusBarClock />
                     <div className="w-[90px]" /> {/* spacer for dynamic island */}
                     <div className="flex items-center gap-1">
                       {/* Signal bars */}
