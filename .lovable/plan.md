@@ -1,155 +1,205 @@
 
 
-# Playground UI Redesign: 2-Pane Layout with ChatGPT-Inspired Chat
+# Playground Polish: Plan Popup Card, Chat UI Refinement, and Visual Upgrade
 
-## What Changes
-
-The current 4-panel layout (FileTree | CodeViewer | Preview | Chat) becomes a clean **2-pane layout**: **Chat on the left**, **Preview/Explorer on the right** -- with a toggle to switch the right pane between Preview and File Explorer views.
+This plan combines the previously approved polish (URL bar, chat input, welcome message, pane styling) with the new **Plan Popup Card** component -- a floating card that appears above the chat input when AIKO generates a plan, allowing the user to review, edit, or approve it.
 
 ---
 
-## New Layout
+## 1. Plan Popup Card (New Component)
+
+**Inspired by the reference images:** A floating card that anchors above the chat input area.
+
+**Behavior:**
+- When `mode === "plan"` and the latest assistant message contains a plan, a popup card slides up above the input bar
+- The card has a "Plan" header with a collapse/expand chevron icon
+- The body shows the plan content rendered as Markdown (scrollable, max-height ~300px)
+- The footer has two buttons: "Edit" (outline, white) and "Approve" (filled blue, with a dropdown chevron)
+- Clicking "Approve" triggers the plan acceptance flow: sends a follow-up message to AIKO telling it to execute the plan in agent mode
+- Clicking "Edit" allows the user to modify the plan text inline before approving
+- The card is dismissible (collapse chevron minimizes it to just the header)
+
+**Visual spec (from reference images):**
+- Dark card with subtle border (`border-border/60`) and rounded corners (`rounded-xl`)
+- "Plan" label in the header, top-left, with a chevron toggle top-right
+- Separator line below header
+- Content area with muted text, skeleton-like bars while loading
+- Footer separator, then "Edit" (white outline button) and "Approve" (blue filled button with dropdown arrow) aligned right
+
+**New file:** `src/components/playground/PlanCard.tsx`
+
+---
+
+## 2. Chat Types Update
+
+**File:** `src/types/chat.ts`
+
+Add a new type for tracking plan state:
 
 ```text
-+---------------------------+-----------------------------------+
-|                           |                                   |
-|   AIKO Chat               |   Right Pane (toggle between):    |
-|   (always visible)        |                                   |
-|                           |   [Preview]  or  [Explorer]       |
-|   - Messages              |                                   |
-|   - Status indicators     |   Preview: phone-frame Sandpack   |
-|   - ChatGPT-style input   |   Explorer: FileTree + CodeViewer |
-|     with Plan/Agent       |                                   |
-|     button inline         |   Toggle pill centered on top     |
-|                           |   border of right pane            |
-+---------------------------+-----------------------------------+
-|  [Plan|Agent] [input...........................] [Send]       |
-+--------------------------------------------------------------+
+export interface PlanData {
+  content: string;        // The plan markdown text
+  isExpanded: boolean;    // Whether the card is expanded or collapsed
+  isApproved: boolean;    // Whether user has approved the plan
+}
 ```
 
 ---
 
-## Changes Summary
+## 3. ChatPanel.tsx Updates
 
-### 1. Playground.tsx -- Simplify to 2 Panels
+**File:** `src/components/playground/ChatPanel.tsx`
 
-**Current:** 4 `ResizablePanel`s (FileTree, CodeViewer, Preview, Chat)
-**New:** 2 `ResizablePanel`s (Chat left ~40%, Right pane ~60%)
-
-- Add a `rightPane` state: `"preview" | "explorer"`
-- Left panel renders `ChatPanel`
-- Right panel renders either `PreviewPanel` or a combined `FileTree + CodeViewer` based on toggle
-- A pill-style toggle button sits centered on the top border of the right pane
-- No functionality changes -- same props, same hooks, same data flow
-
-### 2. ChatPanel.tsx -- ChatGPT-Inspired Redesign
-
-**Input area redesign:**
-- Replace the current flat input + separate ModeToggle with a single unified input bar
-- Rounded container with soft borders (like ChatGPT's input box)
-- Plan/Agent toggle becomes a small segmented button **inside** the input bar, to the left of the text input
-- Send button with arrow-up icon (ChatGPT style) on the right, only visible when input has text
-- Textarea instead of input for multi-line support, auto-grows up to ~4 lines
-
-**Status indicator redesign:**
-- Move status indicator inline above the input bar (like ChatGPT's "thinking" indicator)
-- Subtle animated dots or shimmer instead of the current pill
-
-**Header:**
-- Remove the separate ModeToggle from the header (moved to input bar)
-- Keep AIKO branding in header
-
-### 3. Right Pane Toggle Component (new)
-
-A simple toggle pill that sits on the top border of the right pane:
-- Two options: "Preview" and "Explorer"
-- Rounded pill with soft transitions
-- When "Preview" is selected: shows Sandpack in phone frame with rounded corners
-- When "Explorer" is selected: shows FileTree on the left third + CodeViewer on the right two-thirds (using a simple flex layout, not resizable panels)
-
-### 4. PreviewPanel.tsx -- Soft Rounded Frame
-
-- Change the phone frame from hard `border-4` to softer `rounded-2xl` with subtle shadow
-- Add padding and a slightly elevated surface background
-- The Sandpack iframe gets `rounded-xl overflow-hidden` for soft corners
-
-### 5. ModeToggle.tsx -- Compact Inline Version
-
-- Shrink to a compact pill that fits inside the input bar
-- Smaller text, tighter padding
-- Same functionality (plan vs agent toggle)
+Changes:
+- Add `planData` state to track the latest plan from assistant messages
+- Detect when the last assistant message was generated in "plan" mode (via `metadata.sub_agent === "plan"`) and extract its content into `planData`
+- Render `PlanCard` component between the messages area and the input bar (positioned above input, with proper spacing)
+- Enlarge the input bar: `rounded-3xl`, `p-3` padding, `min-h-[44px]` textarea
+- Enhance the welcome message: `text-2xl font-bold` with shadow, larger AIKO icon with glow, `py-20` spacing
+- When user clicks "Approve" on PlanCard, call `onSend("Approved plan: execute it", "agent")` to switch to agent mode and implement
 
 ---
 
-## Files Modified
+## 4. PreviewPanel.tsx -- URL Bar and Visual Polish
 
-| File | Change |
-|------|--------|
-| `src/pages/Playground.tsx` | Replace 4-panel layout with 2-panel + right-pane toggle state |
-| `src/components/playground/ChatPanel.tsx` | ChatGPT-inspired input bar with inline Plan/Agent toggle |
-| `src/components/playground/ModeToggle.tsx` | Make compact for inline input bar use |
-| `src/components/playground/PreviewPanel.tsx` | Softer rounded borders on phone frame |
-| `src/components/playground/AgentStatusIndicator.tsx` | Subtler inline style for status |
+**File:** `src/components/playground/PreviewPanel.tsx`
 
-## Files Created
+Changes:
+- Add a browser-style URL bar at the top of the preview showing `/project/{id}` with Monitor, ExternalLink, and RefreshCw icons
+- Enhance phone frame: `shadow-2xl`, softer `rounded-[2.5rem]`, inner glow
+- URL bar sits above the phone frame, styled as `rounded-full bg-secondary/80 border`
 
-| File | Purpose |
-|------|---------|
-| `src/components/playground/RightPaneToggle.tsx` | Toggle pill button for Preview vs Explorer |
+---
+
+## 5. Playground.tsx -- Pane and Top Bar Polish
+
+**File:** `src/pages/Playground.tsx`
+
+Changes:
+- Add `backdrop-blur-sm` and subtle `shadow-sm` to the top bar
+- Add `bg-secondary/10` background to the right pane container for visual depth
+- Pass `projectId` to `ChatPanel` so the PlanCard can display `/project/{id}` context
+
+---
+
+## Files Summary
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/playground/PlanCard.tsx` | Create | Plan popup card with header, markdown body, Edit/Approve footer |
+| `src/types/chat.ts` | Modify | Add `PlanData` interface |
+| `src/components/playground/ChatPanel.tsx` | Modify | Integrate PlanCard, enlarge input, polish welcome message |
+| `src/components/playground/PreviewPanel.tsx` | Modify | Add URL bar, enhance frame styling |
+| `src/pages/Playground.tsx` | Modify | Polish top bar and right pane backgrounds |
 
 ---
 
 ## Technical Details
 
-### Playground.tsx Structure
+### PlanCard.tsx Structure
 
 ```text
-<div h-screen flex-col>
-  <TopBar /> (unchanged)
-  <ResizablePanelGroup horizontal>
-    <ResizablePanel 40%>   // Chat
-      <ChatPanel ... />
-    </ResizablePanel>
-    <ResizableHandle withHandle />
-    <ResizablePanel 60%>   // Right pane
-      <div relative h-full>
-        <RightPaneToggle value={rightPane} onChange={setRightPane} />
-        {rightPane === "preview" ? (
-          <PreviewPanel files={sandpackFiles} />
-        ) : (
-          <div flex h-full>
-            <div w-1/3 border-r>
-              <FileTree ... />
-            </div>
-            <div flex-1>
-              <CodeViewer ... />
-            </div>
-          </div>
-        )}
-      </div>
-    </ResizablePanel>
-  </ResizablePanelGroup>
-</div>
-```
+<div className="mx-3 mb-2">
+  <div className="rounded-xl border border-border/60 bg-card shadow-lg overflow-hidden">
+    {/* Header */}
+    <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+      <span className="text-sm font-semibold text-foreground">Plan</span>
+      <button onClick={toggleExpand}>
+        <ChevronsUpDown className="w-4 h-4" />
+      </button>
+    </div>
 
-### ChatPanel Input Bar Structure
+    {/* Body -- collapsible */}
+    {isExpanded && (
+      <>
+        <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
+          {isEditing ? (
+            <textarea value={editContent} onChange={...} />
+          ) : (
+            <ReactMarkdown>{content}</ReactMarkdown>
+          )}
+        </div>
 
-```text
-<div rounded-2xl border bg-secondary/50 p-1 flex items-end>
-  <ModeToggle />              // compact pill on the left
-  <textarea auto-grow />      // grows up to 4 lines
-  <button send />             // circular, only when has text
-</div>
-```
-
-### RightPaneToggle
-
-```text
-<div absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10>
-  <div rounded-full bg-background border shadow-sm flex p-0.5>
-    <button "Preview" />
-    <button "Explorer" />
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border/40">
+          <button "Edit" -- outline white />
+          <button "Approve" -- blue filled with dropdown chevron />
+        </div>
+      </>
+    )}
   </div>
+</div>
+```
+
+### PlanCard Props
+
+```text
+interface PlanCardProps {
+  content: string;
+  isLoading: boolean;
+  onApprove: (content: string) => void;
+  onDismiss: () => void;
+}
+```
+
+### ChatPanel Integration
+
+The PlanCard renders between the messages scroll area and the status/input area:
+
+```text
+<div className="flex flex-col h-full">
+  <Header />
+  <Messages />       {/* flex-1 overflow-y-auto */}
+  {planData && <PlanCard ... />}   {/* anchored above input */}
+  <StatusIndicator />
+  <InputBar />        {/* enlarged, rounded-3xl */}
+</div>
+```
+
+### Plan Detection Logic
+
+In ChatPanel, detect plan content from messages:
+
+```text
+const latestPlan = messages.findLast(
+  m => m.role === "assistant" && m.metadata?.sub_agent === "plan"
+);
+```
+
+When Approve is clicked:
+```text
+onSend(`Execute this plan:\n${planContent}`, "agent");
+setPlanDismissed(true);
+```
+
+### Enhanced Welcome Message
+
+```text
+<div className="flex flex-col items-center justify-center py-20">
+  <div className="w-14 h-14 rounded-2xl bg-accent shadow-lg shadow-accent/20 
+                  flex items-center justify-center mb-4">
+    <span className="text-2xl font-bold text-white">A</span>
+  </div>
+  <h2 className="text-2xl font-bold text-foreground drop-shadow-sm mb-2">
+    Hi! I'm AIKO
+  </h2>
+  <p className="text-base text-muted-foreground">
+    Describe what you want to build and I'll help you create it.
+  </p>
+</div>
+```
+
+### PreviewPanel URL Bar
+
+```text
+<div className="flex items-center gap-2 px-4 py-2">
+  <div className="flex-1 flex items-center gap-2 rounded-full bg-secondary/80 
+                  border border-border/40 px-3 py-1.5 text-xs text-muted-foreground">
+    <Monitor className="w-3.5 h-3.5" />
+    <span>/project/{projectId || "?"}</span>
+  </div>
+  <button><ExternalLink className="w-3.5 h-3.5" /></button>
+  <button><RefreshCw className="w-3.5 h-3.5" /></button>
 </div>
 ```
 
@@ -157,10 +207,12 @@ A simple toggle pill that sits on the top border of the right pane:
 
 ## What Does NOT Change
 
-- All hooks (`useChat`, `useProject`, `useSnapshots`, etc.) remain identical
+- All hooks (`useChat`, `useProject`, `useSnapshots`) remain identical
 - Database schema, RLS policies, edge functions -- untouched
 - `FileTree`, `CodeViewer` internal logic -- unchanged
 - Sandpack configuration and template system -- unchanged
 - Version history dropdown -- stays in top bar
+- 2-pane layout structure (Chat left, Right pane right) -- unchanged
+- ModeToggle, AgentStatusIndicator -- unchanged from previous redesign
 - All routing, auth, dashboard -- unchanged
 
