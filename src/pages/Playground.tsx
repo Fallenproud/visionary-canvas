@@ -10,9 +10,12 @@ import { FileTree } from "@/components/playground/FileTree";
 import { CodeViewer } from "@/components/playground/CodeViewer";
 import { PreviewPanel } from "@/components/playground/PreviewPanel";
 import { ChatPanel } from "@/components/playground/ChatPanel";
+import { VersionHistoryDropdown } from "@/components/playground/VersionHistoryDropdown";
 import { projectFilesToSandpackFiles } from "@/lib/sandpack-config";
+import { useSnapshots, useCreateSnapshot, useRevertToSnapshot } from "@/hooks/useSnapshots";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { AgentMode } from "@/types/chat";
 
 const Playground = () => {
@@ -24,7 +27,9 @@ const Playground = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [changedFiles, setChangedFiles] = useState<string[]>([]);
-
+  const { data: snapshots = [] } = useSnapshots(projectId);
+  const createSnapshot = useCreateSnapshot();
+  const revertToSnapshot = useRevertToSnapshot();
   const { messages, status, isLoading, sendMessage, loadMessages } = useChat(
     projectId || "",
     conversationId
@@ -80,15 +85,43 @@ const Playground = () => {
   const selectedContent = projectFiles?.find((f) => f.file_path === selectedFile)?.content || "";
   const sandpackFiles = projectFilesToSandpackFiles(projectFiles || []);
 
-  const handleSend = (content: string, mode: AgentMode) => {
-    if (!conversationId) return;
-    setChangedFiles([]); // Clear previous indicators
+  const handleSend = async (content: string, mode: AgentMode) => {
+    if (!conversationId || !projectId) return;
+    setChangedFiles([]);
+
+    // Auto-save a snapshot before AIKO makes changes (only if files exist)
+    if (projectFiles && projectFiles.length > 0) {
+      try {
+        await createSnapshot.mutateAsync({
+          projectId,
+          label: content.slice(0, 60),
+          files: projectFiles.map((f) => ({
+            file_path: f.file_path,
+            content: f.content,
+            language: f.language || undefined,
+          })),
+        });
+      } catch {
+        // Non-blocking — don't prevent chat from working
+      }
+    }
+
     sendMessage(
       content,
       mode,
       conversationId,
       (projectFiles || []).map((f) => ({ file_path: f.file_path, content: f.content }))
     );
+  };
+
+  const handleRevert = async (snapshot: (typeof snapshots)[0]) => {
+    if (!projectId) return;
+    try {
+      await revertToSnapshot.mutateAsync({ projectId, snapshot });
+      toast.success(`Reverted to v${snapshot.version}`);
+    } catch {
+      toast.error("Failed to revert");
+    }
   };
 
   return (
@@ -105,6 +138,13 @@ const Playground = () => {
         <span className="text-xs text-muted-foreground capitalize ml-2 px-2 py-0.5 bg-secondary rounded">
           {project?.status || "..."}
         </span>
+        <div className="ml-auto">
+          <VersionHistoryDropdown
+            snapshots={snapshots}
+            isReverting={revertToSnapshot.isPending}
+            onRevert={handleRevert}
+          />
+        </div>
       </div>
 
       {/* Main content */}

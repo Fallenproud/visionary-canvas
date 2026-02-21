@@ -155,6 +155,41 @@ export type Database = {
           },
         ]
       }
+      project_snapshots: {
+        Row: {
+          created_at: string
+          files: Json
+          id: string
+          label: string
+          project_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          files?: Json
+          id?: string
+          label?: string
+          project_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          files?: Json
+          id?: string
+          label?: string
+          project_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_snapshots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
