@@ -5,106 +5,113 @@ export interface BoilerplateTemplate {
 }
 
 export const expoBlankTemplate: BoilerplateTemplate = {
-  name: "Expo Blank",
-  description: "A minimal Expo app with a single screen",
+  name: "Blank App",
+  description: "A minimal app with a single screen",
   files: {
-    "/App.tsx": `import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
-
-export default function App() {
+    "/App.tsx": `export default function App() {
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to My App</Text>
-        <Text style={styles.subtitle}>Built with AIKO</Text>
-      </View>
-    </SafeAreaView>
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      backgroundColor: "#ffffff",
+      padding: 20,
+    }}>
+      <h1 style={{ fontSize: 28, fontWeight: "bold", marginBottom: 8, color: "#111" }}>
+        Welcome to My App
+      </h1>
+      <p style={{ fontSize: 16, color: "#666" }}>Built with AIKO</p>
+    </div>
   );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#666' },
-});`,
-    "/package.json": JSON.stringify({
-      name: "my-expo-app",
-      version: "1.0.0",
-      main: "App.tsx",
-      dependencies: {
-        "react": "^18.2.0",
-        "react-native": "^0.72.0",
-        "react-native-web": "^0.19.0",
+}`,
+    "/package.json": JSON.stringify(
+      {
+        name: "my-app",
+        version: "1.0.0",
+        main: "App.tsx",
+        dependencies: {
+          react: "^18.2.0",
+          "react-dom": "^18.2.0",
+        },
       },
-    }, null, 2),
+      null,
+      2
+    ),
   },
 };
 
 export const expoTabsTemplate: BoilerplateTemplate = {
-  name: "Expo Tabs",
-  description: "An Expo app with bottom tab navigation",
+  name: "Tabs App",
+  description: "An app with bottom tab navigation",
   files: {
-    "/App.tsx": `import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
+    "/App.tsx": `import { useState } from "react";
 
 function HomeScreen() {
   return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.subtitle}>Welcome to your app</Text>
-    </View>
+    <div style={styles.screen}>
+      <h1 style={styles.title}>Home</h1>
+      <p style={styles.subtitle}>Welcome to your app</p>
+    </div>
   );
 }
 
 function SettingsScreen() {
   return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Configure your app</Text>
-    </View>
+    <div style={styles.screen}>
+      <h1 style={styles.title}>Settings</h1>
+      <p style={styles.subtitle}>Configure your app</p>
+    </div>
   );
 }
 
 export default function App() {
-  const [tab, setTab] = useState('home');
+  const [tab, setTab] = useState("home");
 
   return (
-    <SafeAreaView style={styles.container}>
-      {tab === 'home' ? <HomeScreen /> : <SettingsScreen />}
-      <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tab} onPress={() => setTab('home')}>
-          <Text style={[styles.tabText, tab === 'home' && styles.activeTab]}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab} onPress={() => setTab('settings')}>
-          <Text style={[styles.tabText, tab === 'settings' && styles.activeTab]}>Settings</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    <div style={styles.container}>
+      {tab === "home" ? <HomeScreen /> : <SettingsScreen />}
+      <div style={styles.tabBar}>
+        <button
+          style={{ ...styles.tab, color: tab === "home" ? "#007AFF" : "#999" }}
+          onClick={() => setTab("home")}
+        >
+          Home
+        </button>
+        <button
+          style={{ ...styles.tab, color: tab === "settings" ? "#007AFF" : "#999" }}
+          onClick={() => setTab("settings")}
+        >
+          Settings
+        </button>
+      </div>
+    </div>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  screen: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#666' },
-  tabBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#eee', height: 60 },
-  tab: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tabText: { fontSize: 14, color: '#999' },
-  activeTab: { color: '#007AFF', fontWeight: '600' },
-});`,
-    "/package.json": JSON.stringify({
-      name: "my-expo-app",
-      version: "1.0.0",
-      main: "App.tsx",
-      dependencies: {
-        "react": "^18.2.0",
-        "react-native": "^0.72.0",
-        "react-native-web": "^0.19.0",
+const styles: Record<string, React.CSSProperties> = {
+  container: { display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+  screen: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 8, color: "#111" },
+  subtitle: { fontSize: 16, color: "#666" },
+  tabBar: { display: "flex", borderTop: "1px solid #eee", height: 60 },
+  tab: { flex: 1, display: "flex", justifyContent: "center", alignItems: "center", background: "none", border: "none", fontSize: 14, cursor: "pointer", fontWeight: 600 },
+};`,
+    "/package.json": JSON.stringify(
+      {
+        name: "my-app",
+        version: "1.0.0",
+        main: "App.tsx",
+        dependencies: {
+          react: "^18.2.0",
+          "react-dom": "^18.2.0",
+        },
       },
-    }, null, 2),
+      null,
+      2
+    ),
   },
 };
 

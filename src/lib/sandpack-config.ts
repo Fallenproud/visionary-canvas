@@ -14,6 +14,4 @@ export function projectFilesToSandpackFiles(
 export const SANDPACK_DEPENDENCIES = {
   react: "^18.2.0",
   "react-dom": "^18.2.0",
-  "react-native": "^0.72.0",
-  "react-native-web": "^0.19.0",
 };

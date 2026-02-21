@@ -72,4 +72,12 @@ All colors MUST be HSL.
   .surface-subtle {
     background-color: hsl(var(--surface-subtle));
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
