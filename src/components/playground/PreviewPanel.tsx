@@ -189,8 +189,10 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
                   <DeviceStatusBar />
                   {/* Dynamic Island */}
                   <div className="flex justify-center pt-0.5">
-                    <div className="w-[90px] h-[22px] bg-black rounded-full shadow-inner flex items-center justify-end pr-1.5 gap-1">
-                      <div className="w-[6px] h-[6px] rounded-full bg-muted-foreground/30" />
+                    <div className="w-[90px] h-[22px] bg-black rounded-full shadow-inner flex items-center px-2.5 gap-1.5">
+                      <div className="w-[7px] h-[7px] rounded-full bg-[#1a1a2e] ring-1 ring-white/10" />
+                      <div className="flex-1" />
+                      <div className="w-[5px] h-[5px] rounded-full bg-muted-foreground/30" />
                     </div>
                   </div>
                 </div>
