@@ -16,13 +16,9 @@ export const PreviewPanel = ({ files }: PreviewPanelProps) => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-4 py-2 border-b border-border/50 text-xs text-muted-foreground">
-        Preview
-      </div>
       <div className="flex-1 overflow-hidden">
-        {/* Phone frame mockup */}
-        <div className="h-full flex items-center justify-center p-4 bg-secondary/20">
-          <div className="w-[320px] h-[580px] rounded-[2rem] border-4 border-border/80 overflow-hidden shadow-2xl bg-white">
+        <div className="h-full flex items-center justify-center p-6 bg-secondary/20">
+          <div className="w-[320px] h-[580px] rounded-[2rem] border-2 border-border/60 overflow-hidden shadow-xl bg-white">
             <Sandpack
               template="react"
               files={files}
