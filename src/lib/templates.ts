@@ -4,11 +4,23 @@ export interface BoilerplateTemplate {
   files: Record<string, string>;
 }
 
+const GLOBAL_STYLES = `html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; }`;
+
 export const expoBlankTemplate: BoilerplateTemplate = {
   name: "Blank App",
   description: "A minimal app with a single screen",
   files: {
-    "/App.tsx": `export default function App() {
+    "/styles.css": GLOBAL_STYLES,
+    "/App.tsx": `import "./styles.css";
+
+export default function App() {
   return (
     <div style={{
       minHeight: "100vh",
@@ -16,7 +28,6 @@ export const expoBlankTemplate: BoilerplateTemplate = {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       backgroundColor: "#ffffff",
       padding: 20,
     }}>
@@ -27,19 +38,6 @@ export const expoBlankTemplate: BoilerplateTemplate = {
     </div>
   );
 }`,
-    "/package.json": JSON.stringify(
-      {
-        name: "my-app",
-        version: "1.0.0",
-        main: "App.tsx",
-        dependencies: {
-          react: "^18.2.0",
-          "react-dom": "^18.2.0",
-        },
-      },
-      null,
-      2
-    ),
   },
 };
 
@@ -47,7 +45,9 @@ export const expoTabsTemplate: BoilerplateTemplate = {
   name: "Tabs App",
   description: "An app with bottom tab navigation",
   files: {
-    "/App.tsx": `import { useState } from "react";
+    "/styles.css": GLOBAL_STYLES,
+    "/App.tsx": `import "./styles.css";
+import { useState } from "react";
 
 function HomeScreen() {
   return (
@@ -92,26 +92,13 @@ export default function App() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+  container: { display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" },
   screen: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   title: { fontSize: 28, fontWeight: "bold", marginBottom: 8, color: "#111" },
   subtitle: { fontSize: 16, color: "#666" },
   tabBar: { display: "flex", borderTop: "1px solid #eee", height: 60 },
   tab: { flex: 1, display: "flex", justifyContent: "center", alignItems: "center", background: "none", border: "none", fontSize: 14, cursor: "pointer", fontWeight: 600 },
 };`,
-    "/package.json": JSON.stringify(
-      {
-        name: "my-app",
-        version: "1.0.0",
-        main: "App.tsx",
-        dependencies: {
-          react: "^18.2.0",
-          "react-dom": "^18.2.0",
-        },
-      },
-      null,
-      2
-    ),
   },
 };
 

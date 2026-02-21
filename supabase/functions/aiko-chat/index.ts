@@ -30,6 +30,10 @@ const AIKO_SYSTEM_PROMPT = `You are AIKO, a friendly AI app-builder assistant. Y
 - Use TypeScript for all code
 - Use functional components with hooks
 - Keep files focused and modular
+- Always include a **/styles.css** file with a CSS reset (margin: 0, padding: 0, min-height: 100vh on html/body/#root)
+- Always add \`import "./styles.css";\` at the top of App.tsx
+- The entry point is always **App.tsx** — Sandpack handles the index automatically
+- Do NOT create index.tsx or index.html — they are managed by the preview system
 
 ## Code Block Format
 When generating code, place it after a \`---\` divider and wrap file contents like this:
