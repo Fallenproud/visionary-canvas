@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatMessage } from "./ChatMessage";
 import { ModeToggle } from "./ModeToggle";
@@ -74,15 +74,18 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick }: 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border/50 flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-accent shadow-md shadow-accent/20 flex items-center justify-center">
-          <span className="text-xs font-bold text-white">A</span>
+      <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-lg bg-accent shadow-md shadow-accent/25 flex items-center justify-center">
+          <Sparkles className="w-3.5 h-3.5 text-white" />
         </div>
-        <span className="font-semibold text-sm">AIKO</span>
+        <div className="flex flex-col">
+          <span className="font-semibold text-sm leading-tight tracking-tight">AIKO</span>
+          <span className="text-[10px] text-muted-foreground leading-tight">AI Assistant</span>
+        </div>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-hide">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1 scrollbar-hide">
         {messages.length === 0 && (
           <motion.div
             initial="hidden"
@@ -90,13 +93,13 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick }: 
             variants={staggerVariants}
             className="flex flex-col items-center justify-center py-20"
           >
-            <motion.div variants={scaleIn} className="w-14 h-14 rounded-2xl bg-accent shadow-lg shadow-accent/20 flex items-center justify-center mb-4">
-              <span className="text-2xl font-bold text-white">A</span>
+            <motion.div variants={scaleIn} className="w-16 h-16 rounded-2xl bg-accent/10 ring-1 ring-accent/20 shadow-lg shadow-accent/10 flex items-center justify-center mb-5">
+              <Sparkles className="w-7 h-7 text-accent" />
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-2xl font-bold text-foreground drop-shadow-sm mb-2">
+            <motion.h2 variants={fadeUp} className="text-xl font-bold text-foreground tracking-tight mb-1.5">
               Hi! I'm AIKO 👋
             </motion.h2>
-            <motion.p variants={fadeUp} className="text-base text-muted-foreground">
+            <motion.p variants={fadeUp} className="text-sm text-muted-foreground text-center max-w-[260px]">
               Describe what you want to build and I'll help you create it.
             </motion.p>
           </motion.div>
@@ -132,33 +135,36 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick }: 
       )}
 
       {/* Input bar */}
-      <div className="p-3">
-        <div className="flex items-end gap-2 rounded-3xl border border-border bg-secondary/50 p-3">
-          <ModeToggle mode={mode} onChange={setMode} />
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder={mode === "plan" ? "Describe your plan..." : "Tell AIKO what to build..."}
-            rows={1}
-            className="flex-1 bg-transparent resize-none text-sm outline-none placeholder:text-muted-foreground py-2 px-2 max-h-[140px] min-h-[44px]"
-            disabled={isLoading}
-          />
-          {input.trim() && (
-            <button
-              onClick={handleSend}
+      <div className="p-3 pt-1">
+        <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm shadow-lg shadow-black/5 overflow-hidden">
+          <div className="flex items-end gap-2 p-3">
+            <ModeToggle mode={mode} onChange={setMode} />
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder={mode === "plan" ? "Describe your plan..." : "Tell AIKO what to build..."}
+              rows={1}
+              className="flex-1 bg-transparent resize-none text-sm outline-none placeholder:text-muted-foreground/60 py-2 px-1 max-h-[140px] min-h-[44px] leading-relaxed"
               disabled={isLoading}
-              className="w-8 h-8 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+            />
+            <motion.button
+              onClick={handleSend}
+              disabled={isLoading || !input.trim()}
+              initial={false}
+              animate={{ scale: input.trim() ? 1 : 0.8, opacity: input.trim() ? 1 : 0.3 }}
+              transition={{ duration: 0.15 }}
+              className="w-8 h-8 shrink-0 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent/90 transition-colors disabled:opacity-30 shadow-sm shadow-accent/20"
             >
               <ArrowUp className="w-4 h-4" />
-            </button>
-          )}
+            </motion.button>
+          </div>
         </div>
       </div>
     </div>
