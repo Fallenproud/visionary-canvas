@@ -1,12 +1,15 @@
 import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { parseCodeBlocks } from "@/lib/code-parser";
 import type { Message, AgentStatus, AgentMode } from "@/types/chat";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aiko-chat`;
 
 export function useChat(projectId: string, conversationId: string | null) {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<AgentStatus>({ state: 'idle' });
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +22,43 @@ export function useChat(projectId: string, conversationId: string | null) {
       .order("created_at");
     if (data) setMessages(data as Message[]);
   }, []);
+
+  /** Parse code blocks from AI response and upsert into project_files */
+  const applyCodeBlocks = useCallback(async (content: string) => {
+    if (!projectId) return [];
+    const blocks = parseCodeBlocks(content);
+    if (blocks.length === 0) return [];
+
+    const filesChanged: string[] = [];
+
+    for (const block of blocks) {
+      const { error } = await supabase
+        .from("project_files")
+        .upsert(
+          {
+            project_id: projectId,
+            file_path: block.filePath,
+            content: block.content,
+            language: block.language,
+            version: 1,
+          },
+          { onConflict: "project_id,file_path" }
+        );
+
+      if (!error) {
+        filesChanged.push(block.filePath);
+      } else {
+        console.error(`Failed to save ${block.filePath}:`, error);
+      }
+    }
+
+    // Invalidate project files query to refresh FileTree + CodeViewer + Sandpack
+    if (filesChanged.length > 0) {
+      await queryClient.invalidateQueries({ queryKey: ["project-files", projectId] });
+    }
+
+    return filesChanged;
+  }, [projectId, queryClient]);
 
   const sendMessage = useCallback(async (
     content: string,
@@ -48,7 +88,7 @@ export function useChat(projectId: string, conversationId: string | null) {
         body: JSON.stringify({
           messages: [...messages, { role: "user", content }].map(m => ({ role: m.role, content: m.content })),
           mode,
-          project_files: projectFiles.slice(0, 10), // Send limited context
+          project_files: projectFiles.slice(0, 10),
         }),
       });
 
@@ -100,17 +140,29 @@ export function useChat(projectId: string, conversationId: string | null) {
         }
       }
 
-      // Save assistant message
+      // Apply code blocks from AI response → save to DB and refresh preview
+      let filesChanged: string[] = [];
+      if (assistantContent && mode === 'agent') {
+        setStatus({ state: 'applying', detail: 'Saving generated files...' });
+        filesChanged = await applyCodeBlocks(assistantContent);
+      }
+
+      // Save assistant message with metadata
       if (assistantContent) {
         await supabase.from("messages").insert({
           conversation_id: convId,
           role: "assistant" as const,
           content: assistantContent,
-          metadata: { sub_agent: mode },
+          metadata: { sub_agent: mode, files_changed: filesChanged },
         });
       }
 
-      setStatus({ state: 'done', detail: 'Changes applied' });
+      setStatus({
+        state: 'done',
+        detail: filesChanged.length > 0
+          ? `Updated ${filesChanged.length} file${filesChanged.length > 1 ? 's' : ''}`
+          : 'Response complete',
+      });
     } catch (err) {
       console.error("Chat error:", err);
       setStatus({ state: 'idle' });
@@ -127,7 +179,7 @@ export function useChat(projectId: string, conversationId: string | null) {
       setIsLoading(false);
       setTimeout(() => setStatus({ state: 'idle' }), 3000);
     }
-  }, [session, messages]);
+  }, [session, messages, applyCodeBlocks]);
 
   return { messages, setMessages, status, isLoading, sendMessage, loadMessages };
 }
