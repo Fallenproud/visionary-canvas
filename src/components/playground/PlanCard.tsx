@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronUp, ChevronDown, Pencil, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 
@@ -27,7 +28,7 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
   };
 
   return (
-    <div className="mx-3 mb-2 animate-in slide-in-from-bottom-4 duration-300">
+    <div className="mx-3 mb-2">
       <div className="rounded-xl border border-border/60 bg-card shadow-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40">
@@ -43,55 +44,63 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
           </button>
         </div>
 
-        {/* Body */}
-        {isExpanded && (
-          <>
-            <div className="px-4 py-3 max-h-[280px] overflow-y-auto">
-              {isLoading ? (
-                <div className="space-y-2">
-                  {[...Array(4)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-3 rounded-full bg-muted animate-pulse"
-                      style={{ width: `${70 + Math.random() * 30}%` }}
-                    />
-                  ))}
-                </div>
-              ) : isEditing ? (
-                <textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full min-h-[160px] bg-secondary/50 rounded-lg p-3 text-sm text-foreground outline-none resize-none border border-border/40 focus:border-primary/50 transition-colors"
-                />
-              ) : (
-                <div className="prose prose-sm prose-invert max-w-none text-muted-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_strong]:text-foreground [&_li]:text-muted-foreground">
-                  <ReactMarkdown>{content}</ReactMarkdown>
-                </div>
-              )}
-            </div>
+        {/* Collapsible Body */}
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              style={{ overflow: "hidden" }}
+            >
+              <div className="px-4 py-3 max-h-[280px] overflow-y-auto">
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-3 rounded-full bg-muted animate-pulse"
+                        style={{ width: `${70 + Math.random() * 30}%` }}
+                      />
+                    ))}
+                  </div>
+                ) : isEditing ? (
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full min-h-[160px] bg-secondary/50 rounded-lg p-3 text-sm text-foreground outline-none resize-none border border-border/40 focus:border-primary/50 transition-colors"
+                  />
+                ) : (
+                  <div className="prose prose-sm prose-invert max-w-none text-muted-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_strong]:text-foreground [&_li]:text-muted-foreground">
+                    <ReactMarkdown>{content}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-border/40">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEditToggle}
-                className="gap-1.5 text-xs"
-              >
-                <Pencil className="w-3 h-3" />
-                {isEditing ? "Preview" : "Edit"}
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleApprove}
-                className="gap-1.5 text-xs bg-primary hover:bg-primary/90"
-              >
-                <Check className="w-3 h-3" />
-                Approve
-              </Button>
-            </div>
-          </>
-        )}
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-border/40">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditToggle}
+                  className="gap-1.5 text-xs"
+                >
+                  <Pencil className="w-3 h-3" />
+                  {isEditing ? "Preview" : "Edit"}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleApprove}
+                  className="gap-1.5 text-xs bg-primary hover:bg-primary/90"
+                >
+                  <Check className="w-3 h-3" />
+                  Approve
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

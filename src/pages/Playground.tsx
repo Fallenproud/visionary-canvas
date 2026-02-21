@@ -114,6 +114,11 @@ const Playground = () => {
     );
   };
 
+  const handleFileClick = (filePath: string) => {
+    setRightPane("explorer");
+    setSelectedFile(filePath.startsWith("/") ? filePath : `/${filePath}`);
+  };
+
   const handleRevert = async (snapshot: (typeof snapshots)[0]) => {
     if (!projectId) return;
     try {
@@ -157,6 +162,7 @@ const Playground = () => {
               status={status}
               isLoading={isLoading}
               onSend={handleSend}
+              onFileClick={handleFileClick}
             />
           </ResizablePanel>
 
