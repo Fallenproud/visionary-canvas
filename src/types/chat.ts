@@ -22,6 +22,12 @@ export interface Message {
 
 export type AgentMode = 'plan' | 'agent';
 
+export interface PlanData {
+  content: string;
+  isExpanded: boolean;
+  isApproved: boolean;
+}
+
 export interface AgentStatus {
   state: 'idle' | 'thinking' | 'writing' | 'applying' | 'done' | 'planning';
   detail?: string;

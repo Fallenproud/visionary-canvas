@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { ArrowUp } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { ModeToggle } from "./ModeToggle";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
+import { PlanCard } from "./PlanCard";
 import type { Message, AgentMode, AgentStatus } from "@/types/chat";
 
 interface ChatPanelProps {
@@ -15,6 +16,7 @@ interface ChatPanelProps {
 export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
+  const [planDismissed, setPlanDismissed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -27,8 +29,22 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
   }, [input]);
+
+  // Detect latest plan from assistant messages
+  const latestPlan = useMemo(() => {
+    if (planDismissed) return null;
+    const planMsg = [...messages].reverse().find(
+      (m) => m.role === "assistant" && m.metadata?.sub_agent === "plan"
+    );
+    return planMsg?.content || null;
+  }, [messages, planDismissed]);
+
+  // Reset dismissed state when new messages arrive
+  useEffect(() => {
+    setPlanDismissed(false);
+  }, [messages.length]);
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -36,11 +52,16 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
     setInput("");
   };
 
+  const handlePlanApprove = (content: string) => {
+    onSend(`Execute this plan:\n${content}`, "agent");
+    setPlanDismissed(true);
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border/50 flex items-center gap-2">
-        <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
+        <div className="w-7 h-7 rounded-lg bg-accent shadow-md shadow-accent/20 flex items-center justify-center">
           <span className="text-xs font-bold text-white">A</span>
         </div>
         <span className="font-semibold text-sm">AIKO</span>
@@ -49,15 +70,32 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-1">
         {messages.length === 0 && (
-          <div className="text-center text-muted-foreground text-sm py-12">
-            <p className="font-medium mb-1">Hi! I'm AIKO 👋</p>
-            <p>Describe what you want to build and I'll help you create it.</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-14 h-14 rounded-2xl bg-accent shadow-lg shadow-accent/20 flex items-center justify-center mb-4">
+              <span className="text-2xl font-bold text-white">A</span>
+            </div>
+            <h2 className="text-2xl font-bold text-foreground drop-shadow-sm mb-2">
+              Hi! I'm AIKO 👋
+            </h2>
+            <p className="text-base text-muted-foreground">
+              Describe what you want to build and I'll help you create it.
+            </p>
           </div>
         )}
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
       </div>
+
+      {/* Plan Card */}
+      {latestPlan && (
+        <PlanCard
+          content={latestPlan}
+          isLoading={isLoading && status.state === "planning"}
+          onApprove={handlePlanApprove}
+          onDismiss={() => setPlanDismissed(true)}
+        />
+      )}
 
       {/* Status */}
       {status.state !== "idle" && (
@@ -66,7 +104,7 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
 
       {/* ChatGPT-style input bar */}
       <div className="p-3">
-        <div className="flex items-end gap-2 rounded-2xl border border-border bg-secondary/50 p-1.5">
+        <div className="flex items-end gap-2 rounded-3xl border border-border bg-secondary/50 p-3">
           <ModeToggle mode={mode} onChange={setMode} />
           <textarea
             ref={textareaRef}
@@ -80,14 +118,14 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
             }}
             placeholder={mode === "plan" ? "Describe your plan..." : "Tell AIKO what to build..."}
             rows={1}
-            className="flex-1 bg-transparent resize-none text-sm outline-none placeholder:text-muted-foreground py-1.5 px-2 max-h-[120px]"
+            className="flex-1 bg-transparent resize-none text-sm outline-none placeholder:text-muted-foreground py-2 px-2 max-h-[140px] min-h-[44px]"
             disabled={isLoading}
           />
           {input.trim() && (
             <button
               onClick={handleSend}
               disabled={isLoading}
-              className="w-7 h-7 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="w-8 h-8 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <ArrowUp className="w-4 h-4" />
             </button>
