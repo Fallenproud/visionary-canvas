@@ -127,7 +127,7 @@ const Playground = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Top bar */}
-      <div className="h-12 border-b border-border/50 flex items-center px-4 gap-3 shrink-0">
+      <div className="h-12 border-b border-border/50 flex items-center px-4 gap-3 shrink-0 backdrop-blur-sm bg-background/80 shadow-sm">
         <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -164,12 +164,12 @@ const Playground = () => {
 
           {/* Right: Preview or Explorer */}
           <ResizablePanel defaultSize={62} minSize={40}>
-            <div className="relative h-full">
+            <div className="relative h-full bg-secondary/5">
               <RightPaneToggle value={rightPane} onChange={setRightPane} />
 
               {rightPane === "preview" ? (
                 <div className="h-full pt-4">
-                  <PreviewPanel files={sandpackFiles} />
+                  <PreviewPanel files={sandpackFiles} projectId={projectId} />
                 </div>
               ) : (
                 <div className="h-full pt-4 flex">
