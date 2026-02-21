@@ -52,7 +52,6 @@ export function useChat(projectId: string, conversationId: string | null) {
       }
     }
 
-    // Invalidate project files query to refresh FileTree + CodeViewer + Sandpack
     if (filesChanged.length > 0) {
       await queryClient.invalidateQueries({ queryKey: ["project-files", projectId] });
     }
@@ -68,7 +67,13 @@ export function useChat(projectId: string, conversationId: string | null) {
   ) => {
     if (!session) return;
     setIsLoading(true);
-    setStatus({ state: mode === 'plan' ? 'planning' : 'thinking', detail: 'AIKO is analyzing your request...' });
+
+    // Phase 1: Routing status (agent mode only)
+    if (mode === 'agent') {
+      setStatus({ state: 'routing', detail: 'Analyzing request & selecting sub-agents...' });
+    } else {
+      setStatus({ state: 'planning', detail: 'AIKO is analyzing your request...' });
+    }
 
     // Save user message
     const { data: savedMsg } = await supabase
@@ -116,6 +121,25 @@ export function useChat(projectId: string, conversationId: string | null) {
           let line = textBuffer.slice(0, newlineIdx);
           textBuffer = textBuffer.slice(newlineIdx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
+
+          // Parse SSE meta comments from the two-phase pipeline
+          if (line.startsWith(": meta:")) {
+            try {
+              const meta = JSON.parse(line.slice(7));
+              if (meta.sub_agents) {
+                setStatus(prev => ({
+                  ...prev,
+                  state: 'writing',
+                  detail: `Sub-agents: ${meta.sub_agents.join(", ")}`,
+                  sub_agents: meta.sub_agents,
+                }));
+              }
+            } catch {
+              // ignore malformed meta
+            }
+            continue;
+          }
+
           if (line.startsWith(":") || line.trim() === "") continue;
           if (!line.startsWith("data: ")) continue;
           const jsonStr = line.slice(6).trim();
@@ -140,7 +164,7 @@ export function useChat(projectId: string, conversationId: string | null) {
         }
       }
 
-      // Apply code blocks from AI response → save to DB and refresh preview
+      // Apply code blocks from AI response
       let filesChanged: string[] = [];
       if (assistantContent && mode === 'agent') {
         setStatus({ state: 'applying', detail: 'Saving generated files...' });
@@ -153,7 +177,11 @@ export function useChat(projectId: string, conversationId: string | null) {
           conversation_id: convId,
           role: "assistant" as const,
           content: assistantContent,
-          metadata: { sub_agent: mode, files_changed: filesChanged },
+          metadata: {
+            sub_agent: mode,
+            files_changed: filesChanged,
+            ...(status.sub_agents ? { sub_agents: status.sub_agents } : {}),
+          },
         });
       }
 
@@ -162,6 +190,7 @@ export function useChat(projectId: string, conversationId: string | null) {
         detail: filesChanged.length > 0
           ? `Updated ${filesChanged.length} file${filesChanged.length > 1 ? 's' : ''}`
           : 'Response complete',
+        sub_agents: status.sub_agents,
       });
     } catch (err) {
       console.error("Chat error:", err);
@@ -179,7 +208,7 @@ export function useChat(projectId: string, conversationId: string | null) {
       setIsLoading(false);
       setTimeout(() => setStatus({ state: 'idle' }), 3000);
     }
-  }, [session, messages, applyCodeBlocks]);
+  }, [session, messages, applyCodeBlocks, status.sub_agents]);
 
   return { messages, setMessages, status, isLoading, sendMessage, loadMessages };
 }
