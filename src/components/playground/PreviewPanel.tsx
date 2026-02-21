@@ -43,20 +43,17 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
                 showNavigator: false,
                 showTabs: false,
                 showLineNumbers: false,
+                showConsole: false,
+                showConsoleButton: false,
+                layout: "preview",
                 editorHeight: "100%",
                 classes: {
                   "sp-wrapper": "!h-full !rounded-none",
                   "sp-preview-container": "!h-full",
                   "sp-preview-iframe": "!h-full",
                 },
-                activeFile: "/App.tsx",
               }}
               theme="dark"
-              customSetup={{
-                dependencies: {
-                  "react-native-web": "^0.19.0",
-                },
-              }}
             />
           </div>
         </div>
