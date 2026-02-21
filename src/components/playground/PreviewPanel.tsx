@@ -200,6 +200,10 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
               {device === "tablet" && (
                 <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
                   <DeviceStatusBar isTablet />
+                  {/* Front camera dot */}
+                  <div className="flex justify-center -mt-[14px]">
+                    <div className="w-[6px] h-[6px] rounded-full bg-black/20 ring-1 ring-black/10" />
+                  </div>
                 </div>
               )}
 
