@@ -1,84 +1,85 @@
 
 
-# Playground Polish: Plan Popup Card, Chat UI Refinement, and Visual Upgrade
+# Playground Enhancement: Animations, TaskCard, and Explorer Wiring
 
-This plan combines the previously approved polish (URL bar, chat input, welcome message, pane styling) with the new **Plan Popup Card** component -- a floating card that appears above the chat input when AIKO generates a plan, allowing the user to review, edit, or approve it.
+## What Changes
 
----
+Three major enhancements to the Playground chat experience:
 
-## 1. Plan Popup Card (New Component)
-
-**Inspired by the reference images:** A floating card that anchors above the chat input area.
-
-**Behavior:**
-- When `mode === "plan"` and the latest assistant message contains a plan, a popup card slides up above the input bar
-- The card has a "Plan" header with a collapse/expand chevron icon
-- The body shows the plan content rendered as Markdown (scrollable, max-height ~300px)
-- The footer has two buttons: "Edit" (outline, white) and "Approve" (filled blue, with a dropdown chevron)
-- Clicking "Approve" triggers the plan acceptance flow: sends a follow-up message to AIKO telling it to execute the plan in agent mode
-- Clicking "Edit" allows the user to modify the plan text inline before approving
-- The card is dismissible (collapse chevron minimizes it to just the header)
-
-**Visual spec (from reference images):**
-- Dark card with subtle border (`border-border/60`) and rounded corners (`rounded-xl`)
-- "Plan" label in the header, top-left, with a chevron toggle top-right
-- Separator line below header
-- Content area with muted text, skeleton-like bars while loading
-- Footer separator, then "Edit" (white outline button) and "Approve" (blue filled button with dropdown arrow) aligned right
-
-**New file:** `src/components/playground/PlanCard.tsx`
+1. **Framer Motion animations** on PlanCard (slide-in) and welcome message (fade-in with stagger)
+2. **TaskCard component** -- when AIKO writes code blocks, they appear as a checklist of files changed (not raw code) in the chat, with clickable file links that switch to Explorer and select that file
+3. **Explorer wiring** -- ChatPanel gets callbacks to switch the right pane to Explorer and select a specific file, connecting AI output to the file tree
 
 ---
 
-## 2. Chat Types Update
+## 1. PlanCard Animations (framer-motion)
 
-**File:** `src/types/chat.ts`
+Replace the CSS `animate-in slide-in-from-bottom-4` with framer-motion for smoother, more delightful animations:
 
-Add a new type for tracking plan state:
+- Wrap the PlanCard outer div in `motion.div` with `initial={{ opacity: 0, y: 40 }}`, `animate={{ opacity: 1, y: 0 }}`, `exit={{ opacity: 0, y: 20 }}`
+- Use `AnimatePresence` in ChatPanel around the PlanCard render so it animates on mount/unmount
+- The collapsible body uses `motion.div` with `animate={{ height: "auto" }}` / `initial={{ height: 0 }}` for smooth expand/collapse
 
-```text
-export interface PlanData {
-  content: string;        // The plan markdown text
-  isExpanded: boolean;    // Whether the card is expanded or collapsed
-  isApproved: boolean;    // Whether user has approved the plan
-}
-```
+**File:** `src/components/playground/PlanCard.tsx`
 
 ---
 
-## 3. ChatPanel.tsx Updates
+## 2. Welcome Message Animation (framer-motion)
+
+Add a staggered entrance animation to the empty-state welcome:
+
+- Wrap the welcome container in `motion.div` with a staggered children animation
+- Icon scales in first, then heading fades up, then subtitle fades up
+- Uses `variants` with `staggerChildren: 0.15`
 
 **File:** `src/components/playground/ChatPanel.tsx`
 
-Changes:
-- Add `planData` state to track the latest plan from assistant messages
-- Detect when the last assistant message was generated in "plan" mode (via `metadata.sub_agent === "plan"`) and extract its content into `planData`
-- Render `PlanCard` component between the messages area and the input bar (positioned above input, with proper spacing)
-- Enlarge the input bar: `rounded-3xl`, `p-3` padding, `min-h-[44px]` textarea
-- Enhance the welcome message: `text-2xl font-bold` with shadow, larger AIKO icon with glow, `py-20` spacing
-- When user clicks "Approve" on PlanCard, call `onSend("Approved plan: execute it", "agent")` to switch to agent mode and implement
+---
+
+## 3. TaskCard Component (New)
+
+When an assistant message contains `files_changed` metadata (or code blocks are parsed from the content), instead of showing raw code in the chat bubble, display a **TaskCard** -- a compact checklist card showing each file as a clickable bullet point.
+
+**Visual spec:**
+- Small card with a header: "Files updated" with a file count badge
+- Each file is a row with a checkbox icon (checked), the file path, and a clickable link icon
+- Clicking a file path calls `onFileClick(filePath)` which switches the right pane to Explorer and selects that file
+- Uses `motion.div` for a subtle slide-in entrance
+
+**Props:**
+```text
+interface TaskCardProps {
+  files: string[];
+  onFileClick: (filePath: string) => void;
+}
+```
+
+**File:** `src/components/playground/TaskCard.tsx` (new)
 
 ---
 
-## 4. PreviewPanel.tsx -- URL Bar and Visual Polish
+## 4. ChatMessage Enhancement
 
-**File:** `src/components/playground/PreviewPanel.tsx`
+Update `ChatMessage` to detect when a message has `files_changed` in metadata and render a `TaskCard` below the message content instead of (or in addition to) the raw markdown.
 
-Changes:
-- Add a browser-style URL bar at the top of the preview showing `/project/{id}` with Monitor, ExternalLink, and RefreshCw icons
-- Enhance phone frame: `shadow-2xl`, softer `rounded-[2.5rem]`, inner glow
-- URL bar sits above the phone frame, styled as `rounded-full bg-secondary/80 border`
+- If `message.metadata?.files_changed?.length > 0`, render `<TaskCard>` after the prose content
+- Pass `onFileClick` prop down from ChatPanel
+
+**File:** `src/components/playground/ChatMessage.tsx`
 
 ---
 
-## 5. Playground.tsx -- Pane and Top Bar Polish
+## 5. Explorer Wiring (ChatPanel to Playground)
 
-**File:** `src/pages/Playground.tsx`
+Add callback props to ChatPanel so clicking a file in TaskCard switches the right pane and selects the file:
 
-Changes:
-- Add `backdrop-blur-sm` and subtle `shadow-sm` to the top bar
-- Add `bg-secondary/10` background to the right pane container for visual depth
-- Pass `projectId` to `ChatPanel` so the PlanCard can display `/project/{id}` context
+- `ChatPanel` receives new prop: `onFileClick: (filePath: string) => void`
+- `ChatMessage` receives the same prop and passes it to `TaskCard`
+- In `Playground.tsx`, the `onFileClick` handler:
+  1. Sets `rightPane` to `"explorer"`
+  2. Sets `selectedFile` to the clicked file path
+
+**Files:** `src/components/playground/ChatPanel.tsx`, `src/pages/Playground.tsx`
 
 ---
 
@@ -86,133 +87,150 @@ Changes:
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/playground/PlanCard.tsx` | Create | Plan popup card with header, markdown body, Edit/Approve footer |
-| `src/types/chat.ts` | Modify | Add `PlanData` interface |
-| `src/components/playground/ChatPanel.tsx` | Modify | Integrate PlanCard, enlarge input, polish welcome message |
-| `src/components/playground/PreviewPanel.tsx` | Modify | Add URL bar, enhance frame styling |
-| `src/pages/Playground.tsx` | Modify | Polish top bar and right pane backgrounds |
+| `src/components/playground/TaskCard.tsx` | Create | Checklist card showing changed files as clickable links |
+| `src/components/playground/PlanCard.tsx` | Modify | Add framer-motion slide-in/collapse animations |
+| `src/components/playground/ChatPanel.tsx` | Modify | Add AnimatePresence for PlanCard, welcome animation, pass onFileClick through |
+| `src/components/playground/ChatMessage.tsx` | Modify | Render TaskCard when files_changed metadata exists |
+| `src/pages/Playground.tsx` | Modify | Wire onFileClick to switch pane and select file |
 
 ---
 
 ## Technical Details
 
-### PlanCard.tsx Structure
+### TaskCard.tsx Structure
 
 ```text
-<div className="mx-3 mb-2">
-  <div className="rounded-xl border border-border/60 bg-card shadow-lg overflow-hidden">
-    {/* Header */}
-    <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
-      <span className="text-sm font-semibold text-foreground">Plan</span>
-      <button onClick={toggleExpand}>
-        <ChevronsUpDown className="w-4 h-4" />
+<motion.div
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="mt-2 rounded-lg border border-border/40 bg-background/50 overflow-hidden"
+>
+  <div className="px-3 py-2 flex items-center gap-2 border-b border-border/30">
+    <CheckSquare className="w-3.5 h-3.5 text-green-400" />
+    <span className="text-xs font-semibold">Files updated</span>
+    <span className="text-[10px] bg-green-400/10 text-green-400 rounded px-1.5 py-0.5">
+      {files.length}
+    </span>
+  </div>
+  <div className="py-1">
+    {files.map(file => (
+      <button
+        key={file}
+        onClick={() => onFileClick(file)}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs 
+                   hover:bg-secondary/60 transition-colors group"
+      >
+        <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />
+        <span className="text-muted-foreground group-hover:text-foreground truncate">
+          {file}
+        </span>
+        <ExternalLink className="w-3 h-3 text-muted-foreground/50 
+                                 group-hover:text-foreground ml-auto shrink-0" />
       </button>
-    </div>
-
-    {/* Body -- collapsible */}
-    {isExpanded && (
-      <>
-        <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
-          {isEditing ? (
-            <textarea value={editContent} onChange={...} />
-          ) : (
-            <ReactMarkdown>{content}</ReactMarkdown>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border/40">
-          <button "Edit" -- outline white />
-          <button "Approve" -- blue filled with dropdown chevron />
-        </div>
-      </>
-    )}
+    ))}
   </div>
-</div>
+</motion.div>
 ```
 
-### PlanCard Props
+### PlanCard Animation
 
 ```text
-interface PlanCardProps {
-  content: string;
-  isLoading: boolean;
-  onApprove: (content: string) => void;
-  onDismiss: () => void;
-}
+<AnimatePresence>  // in ChatPanel
+  {latestPlan && (
+    <motion.div
+      key="plan-card"
+      initial={{ opacity: 0, y: 40, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.97 }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+    >
+      <PlanCard ... />
+    </motion.div>
+  )}
+</AnimatePresence>
 ```
 
-### ChatPanel Integration
-
-The PlanCard renders between the messages scroll area and the status/input area:
+The expand/collapse body inside PlanCard uses:
 
 ```text
-<div className="flex flex-col h-full">
-  <Header />
-  <Messages />       {/* flex-1 overflow-y-auto */}
-  {planData && <PlanCard ... />}   {/* anchored above input */}
-  <StatusIndicator />
-  <InputBar />        {/* enlarged, rounded-3xl */}
-</div>
+<AnimatePresence initial={false}>
+  {isExpanded && (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+    >
+      {/* body + footer */}
+    </motion.div>
+  )}
+</AnimatePresence>
 ```
 
-### Plan Detection Logic
-
-In ChatPanel, detect plan content from messages:
+### Welcome Message Animation
 
 ```text
-const latestPlan = messages.findLast(
-  m => m.role === "assistant" && m.metadata?.sub_agent === "plan"
-);
-```
-
-When Approve is clicked:
-```text
-onSend(`Execute this plan:\n${planContent}`, "agent");
-setPlanDismissed(true);
-```
-
-### Enhanced Welcome Message
-
-```text
-<div className="flex flex-col items-center justify-center py-20">
-  <div className="w-14 h-14 rounded-2xl bg-accent shadow-lg shadow-accent/20 
-                  flex items-center justify-center mb-4">
-    <span className="text-2xl font-bold text-white">A</span>
-  </div>
-  <h2 className="text-2xl font-bold text-foreground drop-shadow-sm mb-2">
+<motion.div
+  initial="hidden"
+  animate="visible"
+  variants={{
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.15 } }
+  }}
+  className="flex flex-col items-center justify-center py-20"
+>
+  <motion.div variants={{ hidden: { scale: 0.5, opacity: 0 }, visible: { scale: 1, opacity: 1 } }}>
+    {/* AIKO icon */}
+  </motion.div>
+  <motion.h2 variants={{ hidden: { y: 15, opacity: 0 }, visible: { y: 0, opacity: 1 } }}>
     Hi! I'm AIKO
-  </h2>
-  <p className="text-base text-muted-foreground">
-    Describe what you want to build and I'll help you create it.
-  </p>
-</div>
+  </motion.h2>
+  <motion.p variants={{ hidden: { y: 15, opacity: 0 }, visible: { y: 0, opacity: 1 } }}>
+    Describe what you want...
+  </motion.p>
+</motion.div>
 ```
 
-### PreviewPanel URL Bar
+### Playground.tsx onFileClick Handler
 
 ```text
-<div className="flex items-center gap-2 px-4 py-2">
-  <div className="flex-1 flex items-center gap-2 rounded-full bg-secondary/80 
-                  border border-border/40 px-3 py-1.5 text-xs text-muted-foreground">
-    <Monitor className="w-3.5 h-3.5" />
-    <span>/project/{projectId || "?"}</span>
-  </div>
-  <button><ExternalLink className="w-3.5 h-3.5" /></button>
-  <button><RefreshCw className="w-3.5 h-3.5" /></button>
-</div>
+const handleFileClick = (filePath: string) => {
+  setRightPane("explorer");
+  // Normalize path to match FileTree format
+  setSelectedFile(filePath.startsWith("/") ? filePath : `/${filePath}`);
+};
+
+// Pass to ChatPanel:
+<ChatPanel
+  messages={messages}
+  status={status}
+  isLoading={isLoading}
+  onSend={handleSend}
+  onFileClick={handleFileClick}
+/>
+```
+
+### ChatMessage Integration
+
+```text
+// In ChatMessage component:
+{!isUser && message.metadata?.files_changed?.length > 0 && (
+  <TaskCard
+    files={message.metadata.files_changed}
+    onFileClick={onFileClick}
+  />
+)}
 ```
 
 ---
 
 ## What Does NOT Change
 
-- All hooks (`useChat`, `useProject`, `useSnapshots`) remain identical
-- Database schema, RLS policies, edge functions -- untouched
-- `FileTree`, `CodeViewer` internal logic -- unchanged
-- Sandpack configuration and template system -- unchanged
-- Version history dropdown -- stays in top bar
-- 2-pane layout structure (Chat left, Right pane right) -- unchanged
-- ModeToggle, AgentStatusIndicator -- unchanged from previous redesign
-- All routing, auth, dashboard -- unchanged
+- All hooks (useChat, useProject, useSnapshots) remain identical
+- Database schema, edge functions -- untouched
+- FileTree, CodeViewer internal logic -- unchanged
+- PlanCard functionality (Edit/Approve) -- unchanged, only animation added
+- ModeToggle, AgentStatusIndicator -- unchanged
+- 2-pane layout structure -- unchanged
+- Routing, auth, dashboard -- unchanged
 
