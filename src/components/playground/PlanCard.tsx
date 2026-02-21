@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { ChevronUp, ChevronDown, Pencil, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -9,14 +9,6 @@ interface PlanCardProps {
   isLoading: boolean;
   onApprove: (content: string) => void;
   onDismiss: () => void;
-}
-
-/** Extract numbered steps from markdown content */
-function extractSteps(md: string): string[] {
-  const lines = md.split("\n");
-  return lines
-    .filter((l) => /^\s*\d+[\.\)]\s+/.test(l))
-    .map((l) => l.replace(/^\s*\d+[\.\)]\s+/, "").trim());
 }
 
 export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardProps) => {
@@ -30,8 +22,6 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
       setEditContent(content);
     }
   }, [content, isEditing]);
-
-  const steps = useMemo(() => extractSteps(content), [content]);
 
   const handleApprove = () => {
     onApprove(isEditing ? editContent : content);
@@ -55,11 +45,6 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-sm font-semibold text-foreground">Plan</span>
-            {steps.length > 0 && !isLoading && (
-              <span className="text-[10px] text-muted-foreground bg-secondary/80 px-1.5 py-0.5 rounded-full">
-                {steps.length} step{steps.length !== 1 ? "s" : ""}
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -88,7 +73,7 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
               transition={{ duration: 0.25, ease: "easeInOut" }}
               style={{ overflow: "hidden" }}
             >
-              <div className="px-4 py-3 max-h-[280px] overflow-y-auto pl-5">
+              <div className="px-4 py-3 max-h-[400px] overflow-y-auto pl-5 scrollbar-hide">
                 {isLoading ? (
                   <div className="space-y-2.5">
                     {[...Array(4)].map((_, i) => (
@@ -97,7 +82,6 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
                         className="h-3 rounded-full relative overflow-hidden bg-muted"
                         style={{ width: `${70 + Math.random() * 30}%` }}
                       >
-                        {/* Shimmer effect */}
                         <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-foreground/5 to-transparent" />
                       </div>
                     ))}
@@ -109,26 +93,9 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
                     className="w-full min-h-[160px] bg-secondary/50 rounded-lg p-3 text-sm text-foreground outline-none resize-none border border-border/40 focus:border-primary/50 transition-colors"
                   />
                 ) : (
-                  <>
-                    {/* Step progress indicator */}
-                    {steps.length > 0 && (
-                      <div className="flex items-center gap-1 mb-3">
-                        {steps.map((_, i) => (
-                          <div key={i} className="flex items-center gap-1">
-                            <div className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center">
-                              {i + 1}
-                            </div>
-                            {i < steps.length - 1 && (
-                              <div className="w-4 h-[1px] bg-border/60" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="prose prose-sm prose-invert max-w-none text-muted-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_strong]:text-foreground [&_li]:text-muted-foreground">
-                      <ReactMarkdown>{content}</ReactMarkdown>
-                    </div>
-                  </>
+                  <div className="prose prose-sm prose-invert max-w-none text-muted-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_strong]:text-foreground [&_li]:text-muted-foreground">
+                    <ReactMarkdown>{content}</ReactMarkdown>
+                  </div>
                 )}
               </div>
 

@@ -226,7 +226,37 @@ serve(async (req) => {
 
     if (mode === "plan") {
       // Plan mode: single call, no routing
-      systemPrompt += `\n\n## MODE: PLAN\nYou are in Plan mode. Analyze the request and produce a clear, numbered step-by-step plan. Do NOT generate code. Only outline what you would do, which screens or components you'd create, and ask for user approval before proceeding. Keep it conversational and easy to understand.`;
+      systemPrompt += `\n\n## MODE: PLAN
+You are in Plan mode. Analyze the request and produce a **structured, professional plan** using the following format:
+
+### File Tree
+Show all files that will be created or modified in a code block:
+\`\`\`text
+src/
+  components/
+    NewComponent.tsx    [NEW]
+    Existing.tsx        [MODIFIED]
+\`\`\`
+
+### Phases
+Organize work into numbered phases. Each phase has:
+- A clear title (e.g., "Phase 1: Setup & Scaffolding")
+- Numbered subtasks within each phase
+- Brief description of what each subtask accomplishes
+
+Example:
+## Phase 1: Setup & Scaffolding
+1. Create project structure and type definitions
+2. Set up routing and navigation
+
+## Phase 2: Core Features
+1. Implement main component logic
+2. Add state management hooks
+
+### Technical Notes
+Add any important technical details, dependencies, or considerations at the end.
+
+Do NOT generate code. Only outline what you would do. Keep it conversational and easy to understand. Ask for user approval before proceeding.`;
     } else {
       // Agent mode: two-phase pipeline
       const routerPlan = await routeRequest(userContent, LOVABLE_API_KEY);
@@ -251,10 +281,19 @@ serve(async (req) => {
 
     // Add project file context
     if (project_files && project_files.length > 0) {
+      // Check for plan file and include it prominently
+      const planFile = project_files.find((f: any) => f.file_path === "/.aiko/plan.md");
+      if (planFile) {
+        systemPrompt += `\n\n## Active Roadmap (/.aiko/plan.md)\nFollow this approved plan as your guide:\n${planFile.content}`;
+      }
+
       const fileContext = project_files
+        .filter((f: any) => f.file_path !== "/.aiko/plan.md")
         .map((f: any) => `--- ${f.file_path} ---\n${f.content}`)
         .join("\n\n");
-      systemPrompt += `\n\n## Current Project Files:\n${fileContext}`;
+      if (fileContext) {
+        systemPrompt += `\n\n## Current Project Files:\n${fileContext}`;
+      }
     }
 
     // ── Call main model (streaming) ──

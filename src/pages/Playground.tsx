@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { useProject, useProjectFiles } from "@/hooks/useProject";
+import { useProject, useProjectFiles, useUpdateProjectFile } from "@/hooks/useProject";
 import { useChat } from "@/hooks/useChat";
 import { supabase } from "@/integrations/supabase/client";
 import { parseCodeBlocks } from "@/lib/code-parser";
@@ -12,23 +12,30 @@ import { PreviewPanel } from "@/components/playground/PreviewPanel";
 import { ChatPanel } from "@/components/playground/ChatPanel";
 import { RightPaneToggle } from "@/components/playground/RightPaneToggle";
 import { VersionHistoryDropdown } from "@/components/playground/VersionHistoryDropdown";
+import { PlaygroundToolbar } from "@/components/playground/PlaygroundToolbar";
+import { PlaygroundActions } from "@/components/playground/PlaygroundActions";
+import { WorkflowViewer } from "@/components/playground/WorkflowViewer";
 import { projectFilesToSandpackFiles } from "@/lib/sandpack-config";
 import { useSnapshots, useCreateSnapshot, useRevertToSnapshot } from "@/hooks/useSnapshots";
-import { ArrowLeft } from "lucide-react";
+import { useWorkflows } from "@/hooks/useWorkflows";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { AgentMode } from "@/types/chat";
+import type { RightPaneView } from "@/components/playground/RightPaneToggle";
 
 const Playground = () => {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: project } = useProject(projectId);
   const { data: projectFiles } = useProjectFiles(projectId);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [changedFiles, setChangedFiles] = useState<string[]>([]);
-  const [rightPane, setRightPane] = useState<"preview" | "explorer">("preview");
+  const [rightPane, setRightPane] = useState<RightPaneView>("preview");
   const { data: snapshots = [] } = useSnapshots(projectId);
   const createSnapshot = useCreateSnapshot();
   const revertToSnapshot = useRevertToSnapshot();
@@ -36,7 +43,25 @@ const Playground = () => {
     projectId || "",
     conversationId
   );
+  const workflows = useWorkflows(projectFiles);
 
+  // Editable project name
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState("");
+
+  useEffect(() => {
+    if (project?.name) setEditName(project.name);
+  }, [project?.name]);
+
+  const handleSaveName = async () => {
+    setIsEditingName(false);
+    const trimmed = editName.trim();
+    if (!trimmed || !projectId || trimmed === project?.name) return;
+    await supabase.from("projects").update({ name: trimmed }).eq("id", projectId);
+    queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+  };
+
+  // --- existing effects ---
   useEffect(() => {
     if (!conversationId) return;
     loadMessages(conversationId);
@@ -100,12 +125,6 @@ const Playground = () => {
     }
   }, [messages]);
 
-  useEffect(() => {
-    if (projectFiles?.length && !selectedFile) {
-      setSelectedFile(projectFiles[0].file_path);
-    }
-  }, [projectFiles]);
-
   const selectedContent = projectFiles?.find((f) => f.file_path === selectedFile)?.content || "";
   const sandpackFiles = projectFilesToSandpackFiles(projectFiles || []);
 
@@ -152,32 +171,84 @@ const Playground = () => {
     }
   };
 
+  const handlePlanApprove = async (planContent: string) => {
+    if (!projectId) return;
+    // Persist plan to /.aiko/plan.md
+    await supabase.from("project_files").upsert(
+      {
+        project_id: projectId,
+        file_path: "/.aiko/plan.md",
+        content: planContent,
+        language: "markdown",
+        version: 1,
+      },
+      { onConflict: "project_id,file_path" }
+    );
+    queryClient.invalidateQueries({ queryKey: ["project-files", projectId] });
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Top bar */}
-      <div className="h-12 border-b border-border/40 flex items-center px-4 gap-3 shrink-0 bg-card/60 backdrop-blur-xl">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-8 h-8 rounded-lg hover:bg-secondary/80 transition-colors"
-          onClick={() => navigate("/dashboard")}
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <div className="h-5 w-px bg-border/40" />
-        <div className="w-6 h-6 rounded-md bg-accent shadow-sm shadow-accent/20 flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-[10px]">A</span>
+      <div className="h-12 border-b border-border/40 flex items-center px-3 gap-2 shrink-0 bg-card/60 backdrop-blur-xl">
+        {/* Left zone */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 rounded-lg hover:bg-secondary/80 transition-colors"
+            onClick={() => navigate("/dashboard")}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div className="h-5 w-px bg-border/40" />
+          <PlaygroundToolbar onWorkflowsClick={() => setRightPane("workflows")} />
         </div>
-        <span className="font-semibold text-sm tracking-tight">{project?.name || "Loading..."}</span>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider ml-1 px-2 py-0.5 bg-secondary/80 rounded-md font-medium">
-          {project?.status || "..."}
-        </span>
-        <div className="ml-auto">
+
+        {/* Center zone: project name + status */}
+        <div className="flex-1 flex items-center justify-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-accent shadow-sm shadow-accent/20 flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-[10px]">A</span>
+          </div>
+          {isEditingName ? (
+            <div className="flex items-center gap-1">
+              <input
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={handleSaveName}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveName();
+                  if (e.key === "Escape") { setIsEditingName(false); setEditName(project?.name || ""); }
+                }}
+                className="bg-secondary/80 border border-border/40 rounded-md px-2 py-0.5 text-sm font-semibold tracking-tight outline-none focus:border-primary/50 transition-colors w-40"
+              />
+              <button onClick={handleSaveName} className="p-0.5 rounded hover:bg-secondary/80">
+                <Check className="w-3.5 h-3.5 text-primary" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsEditingName(true)}
+              className="font-semibold text-sm tracking-tight hover:bg-secondary/60 px-2 py-0.5 rounded-md transition-colors cursor-text"
+              title="Click to rename"
+            >
+              {project?.name || "Loading..."}
+            </button>
+          )}
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 py-0.5 bg-secondary/80 rounded-md font-medium">
+            {project?.status || "..."}
+          </span>
+        </div>
+
+        {/* Right zone */}
+        <div className="flex items-center gap-2">
           <VersionHistoryDropdown
             snapshots={snapshots}
             isReverting={revertToSnapshot.isPending}
             onRevert={handleRevert}
           />
+          <PlaygroundActions />
         </div>
       </div>
 
@@ -192,12 +263,14 @@ const Playground = () => {
               isLoading={isLoading}
               onSend={handleSend}
               onFileClick={handleFileClick}
+              projectId={projectId || ""}
+              onPlanApprove={handlePlanApprove}
             />
           </ResizablePanel>
 
           <ResizableHandle className="w-px bg-border/30 hover:bg-accent/50 transition-colors data-[resize-handle-active]:bg-accent" />
 
-          {/* Right: Preview or Explorer */}
+          {/* Right: Preview, Explorer, or Workflows */}
           <ResizablePanel defaultSize={62} minSize={40}>
             <div className="relative h-full surface-subtle">
               <RightPaneToggle value={rightPane} onChange={setRightPane} />
@@ -205,6 +278,10 @@ const Playground = () => {
               {rightPane === "preview" ? (
                 <div className="h-full pt-4">
                   <PreviewPanel files={sandpackFiles} projectId={projectId} />
+                </div>
+              ) : rightPane === "workflows" ? (
+                <div className="h-full pt-12">
+                  <WorkflowViewer workflows={workflows} />
                 </div>
               ) : (
                 <div className="h-full pt-4 flex">

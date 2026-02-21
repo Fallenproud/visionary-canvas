@@ -13,6 +13,8 @@ interface ChatPanelProps {
   isLoading: boolean;
   onSend: (content: string, mode: AgentMode) => void;
   onFileClick?: (filePath: string) => void;
+  projectId: string;
+  onPlanApprove?: (content: string) => void;
 }
 
 const staggerVariants = {
@@ -30,7 +32,7 @@ const scaleIn = {
   visible: { scale: 1, opacity: 1, transition: { type: "spring" as const, damping: 15, stiffness: 200 } },
 };
 
-export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick }: ChatPanelProps) => {
+export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick, projectId, onPlanApprove }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
   const [planDismissed, setPlanDismissed] = useState(false);
@@ -67,6 +69,7 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick }: 
   };
 
   const handlePlanApprove = (content: string) => {
+    onPlanApprove?.(content);
     onSend(`Execute this plan:\n${content}`, "agent");
     setPlanDismissed(true);
   };
