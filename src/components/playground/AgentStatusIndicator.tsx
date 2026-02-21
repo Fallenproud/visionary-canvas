@@ -22,9 +22,10 @@ export const AgentStatusIndicator = ({ status }: { status: AgentStatus }) => {
   const labels: Record<string, string> = {
     thinking: "Thinking",
     planning: "Planning",
+    routing: "Selecting sub-agents",
     writing: status.detail || "Writing code",
     applying: "Applying changes",
-    done: "Done",
+    done: status.detail || "Done",
   };
 
   const label = labels[status.state] || "";

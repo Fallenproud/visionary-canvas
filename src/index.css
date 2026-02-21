@@ -98,3 +98,9 @@ All colors MUST be HSL.
 .sp-preview-actions {
   display: none !important;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

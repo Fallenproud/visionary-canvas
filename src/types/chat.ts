@@ -29,6 +29,7 @@ export interface PlanData {
 }
 
 export interface AgentStatus {
-  state: 'idle' | 'thinking' | 'writing' | 'applying' | 'done' | 'planning';
+  state: 'idle' | 'thinking' | 'writing' | 'applying' | 'done' | 'planning' | 'routing';
   detail?: string;
+  sub_agents?: string[];
 }
