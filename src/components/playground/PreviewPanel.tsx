@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
-import { Sandpack, useSandpack } from "@codesandbox/sandpack-react";
+import { SandpackProvider, SandpackPreview } from "@codesandbox/sandpack-react";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 import { Monitor, ExternalLink, RotateCw, Smartphone, Tablet, MonitorSmartphone } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { motion, AnimatePresence } from "framer-motion";
 
 type DeviceMode = "mobile" | "tablet" | "desktop";
 
@@ -126,26 +126,31 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
       {/* Device Frame */}
       <div className="flex-1 overflow-hidden">
         <div className={`h-full flex items-center justify-center bg-secondary/10 ${isDesktop ? "p-2" : "p-6"}`}>
-          <div
-            className="overflow-hidden border-2 border-border/50 shadow-2xl shadow-black/20 bg-white ring-1 ring-border/20 relative"
-            style={{
-              width: config.width,
-              height: config.height,
-              borderRadius: config.borderRadius,
-              maxWidth: "100%",
-              maxHeight: "100%",
-            }}
-          >
-            {/* Loading overlay */}
-            {loading && (
-              <div className="absolute inset-0 z-10 bg-background/90 flex flex-col items-center justify-center gap-3">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-muted-foreground">Bundling...</span>
-              </div>
-            )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={device}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="overflow-hidden border-2 border-border/50 shadow-2xl shadow-black/20 bg-white ring-1 ring-border/20 relative"
+              style={{
+                width: config.width,
+                height: config.height,
+                borderRadius: config.borderRadius,
+                maxWidth: "100%",
+                maxHeight: "100%",
+              }}
+            >
+              {/* Loading overlay */}
+              {loading && (
+                <div className="absolute inset-0 z-10 bg-background/90 flex flex-col items-center justify-center gap-3">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-muted-foreground">Bundling...</span>
+                </div>
+              )}
 
-            <div style={{ height: "100%", width: "100%" }}>
-              <Sandpack
+              <SandpackProvider
                 key={sandpackKey}
                 template="react-ts"
                 files={filesWithReset}
@@ -155,24 +160,17 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
                     "react-dom": "^18.2.0",
                   },
                 }}
-                options={{
-                  showNavigator: false,
-                  showTabs: false,
-                  showLineNumbers: false,
-                  showConsole: false,
-                  showConsoleButton: false,
-                  layout: "preview",
-                  classes: {
-                    "sp-wrapper": "!h-full !rounded-none !border-none",
-                    "sp-layout": "!h-full !border-none",
-                    "sp-preview-container": "!h-full",
-                    "sp-preview-iframe": "!h-full !w-full",
-                  },
-                }}
                 theme="dark"
-              />
-            </div>
-          </div>
+              >
+                <SandpackPreview
+                  showNavigator={false}
+                  showOpenInCodeSandbox={false}
+                  showRefreshButton={false}
+                  style={{ height: "100%", width: "100%" }}
+                />
+              </SandpackProvider>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </div>
