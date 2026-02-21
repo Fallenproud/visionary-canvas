@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowUp } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { ModeToggle } from "./ModeToggle";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
@@ -17,10 +16,19 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Auto-grow textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, [input]);
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
@@ -29,16 +37,13 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
   };
 
   return (
-    <div className="flex flex-col h-full border-l border-border/50 bg-background">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
-            <span className="text-xs font-bold text-white">A</span>
-          </div>
-          <span className="font-semibold text-sm">AIKO</span>
+      <div className="px-4 py-3 border-b border-border/50 flex items-center gap-2">
+        <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center">
+          <span className="text-xs font-bold text-white">A</span>
         </div>
-        <ModeToggle mode={mode} onChange={setMode} />
+        <span className="font-semibold text-sm">AIKO</span>
       </div>
 
       {/* Messages */}
@@ -56,25 +61,37 @@ export const ChatPanel = ({ messages, status, isLoading, onSend }: ChatPanelProp
 
       {/* Status */}
       {status.state !== "idle" && (
-        <div className="px-4 py-1">
-          <AgentStatusIndicator status={status} />
-        </div>
+        <AgentStatusIndicator status={status} />
       )}
 
-      {/* Input */}
-      <div className="p-3 border-t border-border/50">
-        <div className="flex gap-2">
-          <input
+      {/* ChatGPT-style input bar */}
+      <div className="p-3">
+        <div className="flex items-end gap-2 rounded-2xl border border-border bg-secondary/50 p-1.5">
+          <ModeToggle mode={mode} onChange={setMode} />
+          <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder={mode === "plan" ? "Describe your plan..." : "Tell AIKO what to build..."}
-            className="flex-1 bg-secondary rounded-lg px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-accent"
+            rows={1}
+            className="flex-1 bg-transparent resize-none text-sm outline-none placeholder:text-muted-foreground py-1.5 px-2 max-h-[120px]"
             disabled={isLoading}
           />
-          <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()}>
-            <Send className="w-4 h-4" />
-          </Button>
+          {input.trim() && (
+            <button
+              onClick={handleSend}
+              disabled={isLoading}
+              className="w-7 h-7 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

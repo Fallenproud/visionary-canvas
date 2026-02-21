@@ -7,10 +7,10 @@ interface ModeToggleProps {
 
 export const ModeToggle = ({ mode, onChange }: ModeToggleProps) => {
   return (
-    <div className="flex items-center bg-secondary rounded-lg p-0.5 text-sm">
+    <div className="flex items-center bg-secondary/80 rounded-lg p-0.5 text-xs shrink-0">
       <button
         onClick={() => onChange("plan")}
-        className={`px-3 py-1 rounded-md transition-colors font-medium ${
+        className={`px-2 py-1 rounded-md transition-colors font-medium ${
           mode === "plan"
             ? "bg-background text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground"
@@ -20,7 +20,7 @@ export const ModeToggle = ({ mode, onChange }: ModeToggleProps) => {
       </button>
       <button
         onClick={() => onChange("agent")}
-        className={`px-3 py-1 rounded-md transition-colors font-medium ${
+        className={`px-2 py-1 rounded-md transition-colors font-medium ${
           mode === "agent"
             ? "bg-background text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground"

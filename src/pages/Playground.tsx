@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useProject, useProjectFiles } from "@/hooks/useProject";
@@ -10,6 +10,7 @@ import { FileTree } from "@/components/playground/FileTree";
 import { CodeViewer } from "@/components/playground/CodeViewer";
 import { PreviewPanel } from "@/components/playground/PreviewPanel";
 import { ChatPanel } from "@/components/playground/ChatPanel";
+import { RightPaneToggle } from "@/components/playground/RightPaneToggle";
 import { VersionHistoryDropdown } from "@/components/playground/VersionHistoryDropdown";
 import { projectFilesToSandpackFiles } from "@/lib/sandpack-config";
 import { useSnapshots, useCreateSnapshot, useRevertToSnapshot } from "@/hooks/useSnapshots";
@@ -27,6 +28,7 @@ const Playground = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [changedFiles, setChangedFiles] = useState<string[]>([]);
+  const [rightPane, setRightPane] = useState<"preview" | "explorer">("preview");
   const { data: snapshots = [] } = useSnapshots(projectId);
   const createSnapshot = useCreateSnapshot();
   const revertToSnapshot = useRevertToSnapshot();
@@ -64,11 +66,10 @@ const Playground = () => {
   // Track changed files from assistant messages
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
-    if (lastMsg?.role === 'assistant' && lastMsg.content) {
+    if (lastMsg?.role === "assistant" && lastMsg.content) {
       const blocks = parseCodeBlocks(lastMsg.content);
       if (blocks.length > 0) {
         setChangedFiles(blocks.map((b) => b.filePath));
-        // Clear indicators after 10 seconds
         const timer = setTimeout(() => setChangedFiles([]), 10000);
         return () => clearTimeout(timer);
       }
@@ -89,7 +90,6 @@ const Playground = () => {
     if (!conversationId || !projectId) return;
     setChangedFiles([]);
 
-    // Auto-save a snapshot before AIKO makes changes (only if files exist)
     if (projectFiles && projectFiles.length > 0) {
       try {
         await createSnapshot.mutateAsync({
@@ -102,7 +102,7 @@ const Playground = () => {
           })),
         });
       } catch {
-        // Non-blocking — don't prevent chat from working
+        // Non-blocking
       }
     }
 
@@ -147,40 +147,49 @@ const Playground = () => {
         </div>
       </div>
 
-      {/* Main content */}
+      {/* 2-pane layout */}
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
-          {/* File tree */}
-          <ResizablePanel defaultSize={15} minSize={10} maxSize={25}>
-            <FileTree
-              files={(projectFiles || []).map((f) => ({ file_path: f.file_path, content: f.content }))}
-              selectedFile={selectedFile}
-              onSelectFile={setSelectedFile}
-              changedFiles={changedFiles}
-            />
-          </ResizablePanel>
-          <ResizableHandle />
-
-          {/* Code viewer */}
-          <ResizablePanel defaultSize={35} minSize={20}>
-            <CodeViewer filePath={selectedFile} content={selectedContent} />
-          </ResizablePanel>
-          <ResizableHandle />
-
-          {/* Preview */}
-          <ResizablePanel defaultSize={25} minSize={15}>
-            <PreviewPanel files={sandpackFiles} />
-          </ResizablePanel>
-          <ResizableHandle />
-
-          {/* Chat */}
-          <ResizablePanel defaultSize={25} minSize={20}>
+          {/* Left: Chat */}
+          <ResizablePanel defaultSize={38} minSize={28} maxSize={50}>
             <ChatPanel
               messages={messages}
               status={status}
               isLoading={isLoading}
               onSend={handleSend}
             />
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Right: Preview or Explorer */}
+          <ResizablePanel defaultSize={62} minSize={40}>
+            <div className="relative h-full">
+              <RightPaneToggle value={rightPane} onChange={setRightPane} />
+
+              {rightPane === "preview" ? (
+                <div className="h-full pt-4">
+                  <PreviewPanel files={sandpackFiles} />
+                </div>
+              ) : (
+                <div className="h-full pt-4 flex">
+                  <div className="w-1/3 border-r border-border/50 overflow-hidden">
+                    <FileTree
+                      files={(projectFiles || []).map((f) => ({
+                        file_path: f.file_path,
+                        content: f.content,
+                      }))}
+                      selectedFile={selectedFile}
+                      onSelectFile={setSelectedFile}
+                      changedFiles={changedFiles}
+                    />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <CodeViewer filePath={selectedFile} content={selectedContent} />
+                  </div>
+                </div>
+              )}
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
