@@ -37,7 +37,32 @@ const Playground = () => {
     conversationId
   );
 
-  // Create or load conversation
+  useEffect(() => {
+    if (!conversationId) return;
+    loadMessages(conversationId);
+  }, [conversationId, loadMessages]);
+
+  useEffect(() => {
+    if (changedFiles.length > 0) {
+      toast.info(
+        <>
+          AI made changes to:
+          <ul className="mt-1 ml-3 list-disc">
+            {changedFiles.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+          </ul>
+        </>
+      );
+    }
+  }, [changedFiles]);
+
+  useEffect(() => {
+    if (projectFiles?.length && !selectedFile) {
+      setSelectedFile(projectFiles[0].file_path);
+    }
+  }, [projectFiles]);
+
   useEffect(() => {
     if (!projectId || !user) return;
     const init = async () => {
@@ -63,7 +88,6 @@ const Playground = () => {
     init();
   }, [projectId, user]);
 
-  // Track changed files from assistant messages
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
     if (lastMsg?.role === "assistant" && lastMsg.content) {
@@ -76,7 +100,6 @@ const Playground = () => {
     }
   }, [messages]);
 
-  // Auto-select first file
   useEffect(() => {
     if (projectFiles?.length && !selectedFile) {
       setSelectedFile(projectFiles[0].file_path);
@@ -132,15 +155,21 @@ const Playground = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Top bar */}
-      <div className="h-12 border-b border-border/50 flex items-center px-4 gap-3 shrink-0 backdrop-blur-sm bg-background/80 shadow-sm">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+      <div className="h-12 border-b border-border/40 flex items-center px-4 gap-3 shrink-0 bg-card/60 backdrop-blur-xl">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-8 h-8 rounded-lg hover:bg-secondary/80 transition-colors"
+          onClick={() => navigate("/dashboard")}
+        >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-xs">A</span>
+        <div className="h-5 w-px bg-border/40" />
+        <div className="w-6 h-6 rounded-md bg-accent shadow-sm shadow-accent/20 flex items-center justify-center">
+          <span className="text-primary-foreground font-bold text-[10px]">A</span>
         </div>
-        <span className="font-semibold text-sm">{project?.name || "Loading..."}</span>
-        <span className="text-xs text-muted-foreground capitalize ml-2 px-2 py-0.5 bg-secondary rounded">
+        <span className="font-semibold text-sm tracking-tight">{project?.name || "Loading..."}</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider ml-1 px-2 py-0.5 bg-secondary/80 rounded-md font-medium">
           {project?.status || "..."}
         </span>
         <div className="ml-auto">
@@ -166,11 +195,11 @@ const Playground = () => {
             />
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
+          <ResizableHandle className="w-px bg-border/30 hover:bg-accent/50 transition-colors data-[resize-handle-active]:bg-accent" />
 
           {/* Right: Preview or Explorer */}
           <ResizablePanel defaultSize={62} minSize={40}>
-            <div className="relative h-full bg-secondary/5">
+            <div className="relative h-full surface-subtle">
               <RightPaneToggle value={rightPane} onChange={setRightPane} />
 
               {rightPane === "preview" ? (
@@ -179,7 +208,7 @@ const Playground = () => {
                 </div>
               ) : (
                 <div className="h-full pt-4 flex">
-                  <div className="w-1/3 border-r border-border/50 overflow-hidden">
+                  <div className="w-1/3 border-r border-border/30 overflow-hidden">
                     <FileTree
                       files={(projectFiles || []).map((f) => ({
                         file_path: f.file_path,
