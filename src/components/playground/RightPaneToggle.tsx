@@ -9,7 +9,7 @@ interface RightPaneToggleProps {
 
 export const RightPaneToggle = ({ value, onChange }: RightPaneToggleProps) => {
   return (
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
       <div className="flex items-center rounded-full bg-background border border-border shadow-sm p-0.5 text-xs font-medium">
         <button
           onClick={() => onChange("preview")}
