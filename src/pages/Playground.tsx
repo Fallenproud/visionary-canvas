@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useProject, useProjectFiles } from "@/hooks/useProject";
 import { useChat } from "@/hooks/useChat";
 import { supabase } from "@/integrations/supabase/client";
+import { parseCodeBlocks } from "@/lib/code-parser";
 import { useAuth } from "@/contexts/AuthContext";
 import { FileTree } from "@/components/playground/FileTree";
 import { CodeViewer } from "@/components/playground/CodeViewer";
@@ -22,6 +23,7 @@ const Playground = () => {
   const { data: projectFiles } = useProjectFiles(projectId);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [changedFiles, setChangedFiles] = useState<string[]>([]);
 
   const { messages, status, isLoading, sendMessage, loadMessages } = useChat(
     projectId || "",
@@ -54,6 +56,20 @@ const Playground = () => {
     init();
   }, [projectId, user]);
 
+  // Track changed files from assistant messages
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === 'assistant' && lastMsg.content) {
+      const blocks = parseCodeBlocks(lastMsg.content);
+      if (blocks.length > 0) {
+        setChangedFiles(blocks.map((b) => b.filePath));
+        // Clear indicators after 10 seconds
+        const timer = setTimeout(() => setChangedFiles([]), 10000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [messages]);
+
   // Auto-select first file
   useEffect(() => {
     if (projectFiles?.length && !selectedFile) {
@@ -66,6 +82,7 @@ const Playground = () => {
 
   const handleSend = (content: string, mode: AgentMode) => {
     if (!conversationId) return;
+    setChangedFiles([]); // Clear previous indicators
     sendMessage(
       content,
       mode,
@@ -99,6 +116,7 @@ const Playground = () => {
               files={(projectFiles || []).map((f) => ({ file_path: f.file_path, content: f.content }))}
               selectedFile={selectedFile}
               onSelectFile={setSelectedFile}
+              changedFiles={changedFiles}
             />
           </ResizablePanel>
           <ResizableHandle />
