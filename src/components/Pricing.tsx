@@ -2,6 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { MockCheckoutDialog } from "@/components/MockCheckoutDialog";
 
 const plans = [
   {
@@ -59,6 +62,30 @@ const plans = [
 
 export const Pricing = () => {
   const [isAnnual, setIsAnnual] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
+
+  const handleCTA = (plan: typeof plans[0]) => {
+    if (plan.name === "Enterprise") {
+      const el = document.getElementById("contact");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    if (plan.name === "Free") {
+      if (!user) navigate("/auth");
+      else navigate("/dashboard");
+      return;
+    }
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setSelectedPlan(plan);
+    setCheckoutOpen(true);
+  };
 
   return (
     <section id="pricing" className="py-32 px-6 relative">
@@ -136,6 +163,7 @@ export const Pricing = () => {
                 className="w-full mb-8"
                 variant={plan.highlighted ? "default" : "outline"}
                 size="lg"
+                onClick={() => handleCTA(plan)}
               >
                 {plan.cta}
               </Button>
@@ -154,6 +182,16 @@ export const Pricing = () => {
           ))}
         </div>
       </div>
+
+      {selectedPlan && (
+        <MockCheckoutDialog
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
+          planName={selectedPlan.name}
+          price={isAnnual ? selectedPlan.priceAnnual : selectedPlan.priceMonthly}
+          period={selectedPlan.period}
+        />
+      )}
     </section>
   );
 };

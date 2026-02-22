@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import {
   Plus, FolderOpen, Trash2, LogOut, Settings, Smartphone, Clock, Search,
-  ArrowUpDown,
+  ArrowUpDown, Shield,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 type SortKey = "updated" | "name" | "status";
 
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: projects, isLoading } = useProjects();
+  const { isAdmin } = useIsAdmin();
   const createProject = useCreateProject();
   const deleteProject = useDeleteProject();
 
@@ -90,6 +92,11 @@ const Dashboard = () => {
             <span className="font-semibold text-lg">AIKO</span>
           </div>
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} title="Admin Panel">
+                <Shield className="w-4 h-4" />
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
               <Settings className="w-4 h-4" />
             </Button>
