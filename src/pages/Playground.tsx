@@ -338,6 +338,9 @@ const Playground = () => {
                       changedFiles={changedFiles}
                       isEditing={isEditing}
                       onEditToggle={setIsEditing}
+                      agentStatus={status}
+                      activeWritingFiles={status.state === "writing" || status.state === "applying" ? changedFiles : []}
+                      onDismissChanges={() => setChangedFiles([])}
                     />
                   </div>
                   <div className="flex-1 overflow-hidden">
