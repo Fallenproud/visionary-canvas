@@ -76,7 +76,7 @@ export const FilePulse = ({ isWriting }: { isWriting: boolean }) => (
 );
 
 /** Toast-like notification shown when files are changed */
-export const FileChangeNotification = ({ files, onDismiss }: { files: string[]; onDismiss: () => void }) => (
+export const FileChangeNotification = ({ files, onDismiss, onFileClick }: { files: string[]; onDismiss: () => void; onFileClick?: (file: string) => void }) => (
   <AnimatePresence>
     {files.length > 0 && (
       <motion.div
@@ -103,16 +103,18 @@ export const FileChangeNotification = ({ files, onDismiss }: { files: string[]; 
           </div>
           <div className="space-y-0.5 mt-1">
             {files.slice(0, 4).map((file, i) => (
-              <motion.div
+              <motion.button
                 key={file}
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-accent transition-colors w-full text-left"
+                onClick={() => onFileClick?.(file)}
+                title="Click to view diff"
               >
                 <FileCode className="w-3 h-3 text-green-400/60" />
                 <span className="truncate">{file}</span>
-              </motion.div>
+              </motion.button>
             ))}
             {files.length > 4 && (
               <span className="text-[10px] text-muted-foreground/60 pl-4">
