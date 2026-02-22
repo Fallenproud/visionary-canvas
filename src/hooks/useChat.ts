@@ -83,6 +83,14 @@ export function useChat(projectId: string, conversationId: string | null) {
     projectFiles: Array<{ file_path: string; content: string }>
   ) => {
     if (!session) return;
+
+    // Input length validation
+    if (content.length > 10000) {
+      const { toast } = await import("sonner");
+      toast.error("Message too long — maximum 10,000 characters.");
+      return;
+    }
+
     setIsLoading(true);
 
     // Snapshot current file contents for diff viewing later
@@ -111,7 +119,7 @@ export function useChat(projectId: string, conversationId: string | null) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: [...messages, { role: "user", content }].map(m => ({ role: m.role, content: m.content })),
