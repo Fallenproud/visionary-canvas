@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { SandpackProvider, SandpackPreview } from "@codesandbox/sandpack-react";
+import { SandpackProvider, SandpackPreview, useSandpackConsole } from "@codesandbox/sandpack-react";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
-import { Monitor, ExternalLink, RotateCw, Smartphone, Tablet, MonitorSmartphone } from "lucide-react";
+import { Monitor, ExternalLink, RotateCw, Smartphone, Tablet, MonitorSmartphone, Terminal, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function StatusBarClock() {
@@ -74,17 +74,52 @@ const GLOBAL_RESET_CSS = `html, body, #root {
 }
 * { box-sizing: border-box; }`;
 
+/** Console panel that displays Sandpack console logs */
+const ConsolePanel = () => {
+  const { logs, reset } = useSandpackConsole({ resetOnPreviewRestart: true });
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-3 py-1 border-b border-border/30">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Console</span>
+        <button onClick={reset} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+          Clear
+        </button>
+      </div>
+      <div className="flex-1 overflow-auto font-mono text-[11px] p-2 space-y-0.5">
+        {logs.length === 0 && (
+          <p className="text-muted-foreground/50 text-center py-4">No console output</p>
+        )}
+        {logs.map((log, i) => (
+          <div
+            key={i}
+            className={`px-2 py-0.5 rounded ${
+              log.method === "error" || log.method === "warn"
+                ? log.method === "error"
+                  ? "text-red-400 bg-red-500/5"
+                  : "text-yellow-400 bg-yellow-500/5"
+                : "text-muted-foreground"
+            }`}
+          >
+            {log.data?.map((d: any) => (typeof d === "object" ? JSON.stringify(d) : String(d))).join(" ")}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
   const [device, setDevice] = useState<DeviceMode>("mobile");
   const [sandpackKey, setSandpackKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [consoleOpen, setConsoleOpen] = useState(false);
 
   const handleRefresh = useCallback(() => {
     setLoading(true);
     setSandpackKey((k) => k + 1);
   }, []);
 
-  // Show loading briefly on mount and key change
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 2000);
     return () => clearTimeout(timer);
@@ -98,13 +133,11 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
     );
   }
 
-  // Inject global reset CSS if not already present
   const filesWithReset: SandpackFiles = { ...files };
   if (!filesWithReset["/styles.css"]) {
     filesWithReset["/styles.css"] = { code: GLOBAL_RESET_CSS };
   }
 
-  // Ensure App.tsx imports styles.css
   const appFile = filesWithReset["/App.tsx"];
   if (appFile) {
     const code = typeof appFile === "string" ? appFile : appFile.code;
@@ -121,7 +154,6 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
     <div className="h-full flex flex-col">
       {/* URL Bar + Device Switcher */}
       <div className="flex items-center gap-2 px-4 py-2 shrink-0">
-        {/* Device toggle pills */}
         <div className="flex items-center gap-0.5 rounded-full bg-secondary/60 border border-border/30 p-0.5">
           <button
             onClick={() => setDevice("mobile")}
@@ -146,12 +178,18 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
           </button>
         </div>
 
-        {/* URL bar */}
         <div className="flex-1 flex items-center gap-2 rounded-full bg-secondary/80 border border-border/40 px-3 py-1.5 text-xs text-muted-foreground">
           <Monitor className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">/project/{projectId || "?"}</span>
         </div>
 
+        <button
+          onClick={() => setConsoleOpen((v) => !v)}
+          className={`p-1.5 rounded-md transition-colors ${consoleOpen ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80"}`}
+          title="Toggle console"
+        >
+          <Terminal className="w-3.5 h-3.5" />
+        </button>
         <button className="p-1.5 rounded-md hover:bg-secondary/80 transition-colors text-muted-foreground" title="Open in new tab">
           <ExternalLink className="w-3.5 h-3.5" />
         </button>
@@ -164,91 +202,102 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
         </button>
       </div>
 
-      {/* Device Frame */}
-      <div className="flex-1 overflow-hidden">
-        <div className={`h-full flex items-center justify-center bg-secondary/10 ${isDesktop ? "p-2" : "p-6"}`}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={device}
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="overflow-hidden border-2 border-border/50 shadow-2xl shadow-black/20 bg-white ring-1 ring-border/20 relative flex flex-col"
-              style={{
-                width: config.width,
-                height: config.height,
-                borderRadius: config.borderRadius,
-                maxWidth: "100%",
-                maxHeight: "100%",
-              }}
-            >
-              {/* Status bar + Dynamic Island — mobile only */}
-              {device === "mobile" && (
-                <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-                  <DeviceStatusBar />
-                  {/* Dynamic Island */}
-                  <div className="flex justify-center pt-0.5">
-                    <div className="w-[90px] h-[22px] bg-black rounded-full shadow-inner flex items-center px-2.5 gap-1.5">
-                      <div className="w-[7px] h-[7px] rounded-full bg-[#1a1a2e] ring-1 ring-white/10" />
-                      <div className="flex-1" />
-                      <div className="w-[5px] h-[5px] rounded-full bg-muted-foreground/30" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Status bar — tablet only */}
-              {device === "tablet" && (
-                <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-                  <DeviceStatusBar isTablet />
-                  {/* Front camera dot */}
-                  <div className="flex justify-center -mt-[14px]">
-                    <div className="w-[6px] h-[6px] rounded-full bg-black/20 ring-1 ring-black/10" />
-                  </div>
-                </div>
-              )}
-
-              {/* Home indicator — mobile & tablet */}
-              {(device === "mobile" || device === "tablet") && (
-                <div className="absolute bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none pb-2">
-                  <div className={`${device === "tablet" ? "w-[140px]" : "w-[100px]"} h-[4px] bg-black/30 rounded-full`} />
-                </div>
-              )}
-
-              {/* Loading overlay */}
-              {loading && (
-                <div className="absolute inset-0 z-10 bg-background/90 flex flex-col items-center justify-center gap-3">
-                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs text-muted-foreground">Bundling...</span>
-                </div>
-              )}
-
-              <div className="flex-1 min-h-0">
-                <SandpackProvider
-                  key={sandpackKey}
-                  template="react-ts"
-                  files={filesWithReset}
-                  customSetup={{
-                    dependencies: {
-                      react: "^18.2.0",
-                      "react-dom": "^18.2.0",
-                    },
+      {/* Device Frame + Console */}
+      <SandpackProvider
+        key={sandpackKey}
+        template="react-ts"
+        files={filesWithReset}
+        customSetup={{
+          dependencies: {
+            react: "^18.2.0",
+            "react-dom": "^18.2.0",
+          },
+        }}
+        theme="dark"
+      >
+        <div className={`flex-1 overflow-hidden flex flex-col ${consoleOpen ? "" : ""}`}>
+          <div className={`${consoleOpen ? "flex-1 min-h-0" : "flex-1"} overflow-hidden`}>
+            <div className={`h-full flex items-center justify-center bg-secondary/10 ${isDesktop ? "p-2" : "p-6"}`}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={device}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="overflow-hidden border-2 border-border/50 shadow-2xl shadow-black/20 bg-white ring-1 ring-border/20 relative flex flex-col"
+                  style={{
+                    width: config.width,
+                    height: config.height,
+                    borderRadius: config.borderRadius,
+                    maxWidth: "100%",
+                    maxHeight: "100%",
                   }}
-                  theme="dark"
                 >
-                  <SandpackPreview
-                    showNavigator={false}
-                    showOpenInCodeSandbox={false}
-                    showRefreshButton={false}
-                    style={{ height: "100%", width: "100%" }}
-                  />
-                </SandpackProvider>
-              </div>
-            </motion.div>
+                  {device === "mobile" && (
+                    <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
+                      <DeviceStatusBar />
+                      <div className="flex justify-center pt-0.5">
+                        <div className="w-[90px] h-[22px] bg-black rounded-full shadow-inner flex items-center px-2.5 gap-1.5">
+                          <div className="w-[7px] h-[7px] rounded-full bg-[#1a1a2e] ring-1 ring-white/10" />
+                          <div className="flex-1" />
+                          <div className="w-[5px] h-[5px] rounded-full bg-muted-foreground/30" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {device === "tablet" && (
+                    <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
+                      <DeviceStatusBar isTablet />
+                      <div className="flex justify-center -mt-[14px]">
+                        <div className="w-[6px] h-[6px] rounded-full bg-black/20 ring-1 ring-black/10" />
+                      </div>
+                    </div>
+                  )}
+
+                  {(device === "mobile" || device === "tablet") && (
+                    <div className="absolute bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none pb-2">
+                      <div className={`${device === "tablet" ? "w-[140px]" : "w-[100px]"} h-[4px] bg-black/30 rounded-full`} />
+                    </div>
+                  )}
+
+                  {loading && (
+                    <div className="absolute inset-0 z-10 bg-background/90 flex flex-col items-center justify-center gap-3">
+                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs text-muted-foreground">Bundling...</span>
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-h-0">
+                    <SandpackPreview
+                      showNavigator={false}
+                      showOpenInCodeSandbox={false}
+                      showRefreshButton={false}
+                      style={{ height: "100%", width: "100%" }}
+                    />
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Collapsible console */}
+          <AnimatePresence>
+            {consoleOpen && (
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 160 }}
+                exit={{ height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="border-t border-border/40 bg-card/80 overflow-hidden"
+              >
+                <ConsolePanel />
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
-      </div>
+      </SandpackProvider>
     </div>
   );
 };

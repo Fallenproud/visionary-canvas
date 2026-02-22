@@ -41,7 +41,7 @@ const Playground = () => {
   const { data: snapshots = [] } = useSnapshots(projectId);
   const createSnapshot = useCreateSnapshot();
   const revertToSnapshot = useRevertToSnapshot();
-  const { messages, status, isLoading, sendMessage, loadMessages, fileSnapshot } = useChat(
+  const { messages, status, isLoading, isOnline, sendMessage, loadMessages, fileSnapshot } = useChat(
     projectId || "",
     conversationId
   );
@@ -309,6 +309,7 @@ const Playground = () => {
               messages={messages}
               status={status}
               isLoading={isLoading}
+              isOnline={isOnline}
               onSend={handleSend}
               onFileClick={handleFileClick}
               projectId={projectId || ""}
