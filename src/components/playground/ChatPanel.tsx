@@ -217,7 +217,7 @@ export const ChatPanel = ({ messages, status, isLoading, isOnline = true, onSend
       <div className="p-3 pt-1">
         <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm shadow-lg shadow-black/5 overflow-hidden">
           <div className="flex items-end gap-2 p-3">
-            <ModeToggle mode={mode} onChange={setMode} />
+            <ModeToggle mode={mode} onChange={setMode} aria-label="Switch chat mode" />
             <textarea
               ref={textareaRef}
               value={input}
@@ -244,6 +244,7 @@ export const ChatPanel = ({ messages, status, isLoading, isOnline = true, onSend
               initial={false}
               animate={{ scale: input.trim() ? 1 : 0.8, opacity: input.trim() ? 1 : 0.3 }}
               transition={{ duration: 0.15 }}
+              aria-label="Send message"
               className="w-8 h-8 shrink-0 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent/90 transition-colors disabled:opacity-30 shadow-sm shadow-accent/20"
             >
               <ArrowUp className="w-4 h-4" />

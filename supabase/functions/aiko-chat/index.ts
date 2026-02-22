@@ -207,6 +207,25 @@ async function routeRequest(
   };
 }
 
+// ─── Rate Limiter ─────────────────────────────────────────────────────
+const RATE_LIMIT_WINDOW = 60_000; // 60 seconds
+const RATE_LIMIT_MAX = 30;
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(userId) || [];
+  // Clean old entries
+  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    rateLimitMap.set(userId, recent);
+    return false;
+  }
+  recent.push(now);
+  rateLimitMap.set(userId, recent);
+  return true;
+}
+
 // ─── Main Handler ─────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -238,6 +257,16 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // ── Rate limiting ──
+    const userId = (claimsData.claims as any).sub || "unknown";
+    if (!checkRateLimit(userId)) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait a moment before sending another message." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
 
     const { messages, mode, project_files } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

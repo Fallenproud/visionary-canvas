@@ -16,10 +16,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 type SortKey = "updated" | "name" | "status";
 
 const Dashboard = () => {
+  usePageTitle("Dashboard");
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: projects, isLoading } = useProjects();

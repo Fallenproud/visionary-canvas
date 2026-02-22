@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Chrome, Github } from "lucide-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const authSchema = z.object({
   email: z.string().trim().email({ message: "Invalid email address" }).max(255),
@@ -34,6 +35,7 @@ const getPasswordStrength = (pw: string): { score: number; label: string; color:
 };
 
 const Auth = () => {
+  usePageTitle("Sign In");
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);

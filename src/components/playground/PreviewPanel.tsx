@@ -158,6 +158,7 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
           <button
             onClick={() => setDevice("mobile")}
             className={`p-1.5 rounded-full transition-colors ${device === "mobile" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Mobile preview"
             title="Mobile"
           >
             <Smartphone className="w-3.5 h-3.5" />
@@ -165,6 +166,7 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
           <button
             onClick={() => setDevice("tablet")}
             className={`p-1.5 rounded-full transition-colors ${device === "tablet" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Tablet preview"
             title="Tablet"
           >
             <Tablet className="w-3.5 h-3.5" />
@@ -172,6 +174,7 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
           <button
             onClick={() => setDevice("desktop")}
             className={`p-1.5 rounded-full transition-colors ${device === "desktop" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Desktop preview"
             title="Desktop"
           >
             <MonitorSmartphone className="w-3.5 h-3.5" />
@@ -186,16 +189,18 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
         <button
           onClick={() => setConsoleOpen((v) => !v)}
           className={`p-1.5 rounded-md transition-colors ${consoleOpen ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/80"}`}
+          aria-label="Toggle console"
           title="Toggle console"
         >
           <Terminal className="w-3.5 h-3.5" />
         </button>
-        <button className="p-1.5 rounded-md hover:bg-secondary/80 transition-colors text-muted-foreground" title="Open in new tab">
+        <button className="p-1.5 rounded-md hover:bg-secondary/80 transition-colors text-muted-foreground" aria-label="Open in new tab" title="Open in new tab">
           <ExternalLink className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleRefresh}
           className="p-1.5 rounded-md hover:bg-secondary/80 transition-colors text-muted-foreground"
+          aria-label="Refresh preview"
           title="Refresh preview"
         >
           <RotateCw className="w-3.5 h-3.5" />
@@ -217,7 +222,7 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
       >
         <div className={`flex-1 overflow-hidden flex flex-col ${consoleOpen ? "" : ""}`}>
           <div className={`${consoleOpen ? "flex-1 min-h-0" : "flex-1"} overflow-hidden`}>
-            <div className={`h-full ${isDesktop ? "flex flex-col" : "flex items-center justify-center p-6"} bg-secondary/10`}>
+            <div className={`h-full ${isDesktop ? "flex flex-col p-3" : "flex items-center justify-center p-6"} bg-secondary/10`}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={device}
@@ -225,10 +230,10 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className={`overflow-hidden bg-white relative flex flex-col ${isDesktop ? "flex-1 min-h-0" : "border-2 border-border/50 shadow-2xl shadow-black/20 ring-1 ring-border/20"}`}
-                  style={isDesktop ? {} : {
-                    width: config.width,
-                    height: config.height,
+                  className={`overflow-hidden bg-white relative flex flex-col border-2 border-border/50 shadow-2xl shadow-black/20 ring-1 ring-border/20 ${isDesktop ? "flex-1 min-h-0" : ""}`}
+                  style={{
+                    width: isDesktop ? undefined : config.width,
+                    height: isDesktop ? undefined : config.height,
                     borderRadius: config.borderRadius,
                     maxWidth: "100%",
                     maxHeight: "100%",
