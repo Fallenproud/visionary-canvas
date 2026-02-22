@@ -232,11 +232,15 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
                   transition={{ duration: 0.25, ease: "easeOut" }}
                   className={`overflow-hidden bg-white relative flex flex-col border-2 border-border/50 shadow-2xl shadow-black/20 ring-1 ring-border/20 ${isDesktop ? "flex-1 min-h-0 w-full" : ""}`}
                   style={{
-                    width: isDesktop ? undefined : config.width,
-                    height: isDesktop ? undefined : config.height,
-                    borderRadius: config.borderRadius,
-                    maxWidth: "100%",
-                    maxHeight: "100%",
+                    ...(isDesktop
+                      ? { borderRadius: config.borderRadius }
+                      : {
+                          width: config.width,
+                          height: config.height,
+                          borderRadius: config.borderRadius,
+                          maxWidth: "100%",
+                          maxHeight: "100%",
+                        }),
                   }}
                 >
                   {device === "mobile" && (
