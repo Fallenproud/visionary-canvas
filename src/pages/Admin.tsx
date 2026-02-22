@@ -3,28 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Shield, LayoutDashboard, Users, FolderKanban, Settings2 } from "lucide-react";
+import AdminOverview from "@/components/admin/AdminOverview";
+import AdminUsers from "@/components/admin/AdminUsers";
+import AdminProjects from "@/components/admin/AdminProjects";
+import AdminSystem from "@/components/admin/AdminSystem";
 
 const Admin = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [stats, setStats] = useState({ users: 0, projects: 0 });
 
   useEffect(() => {
     if (!user) return;
-    // Check admin role via RPC
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => {
-      setIsAdmin(!!data);
-    });
-
-    // Get stats (only works for admin due to RLS)
-    supabase.from("profiles").select("id", { count: "exact", head: true }).then(({ count }) => {
-      setStats((s) => ({ ...s, users: count || 0 }));
-    });
-    supabase.from("projects").select("id", { count: "exact", head: true }).then(({ count }) => {
-      setStats((s) => ({ ...s, projects: count || 0 }));
-    });
+    supabase
+      .rpc("has_role", { _user_id: user.id, _role: "admin" })
+      .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
   if (isAdmin === null) {
@@ -51,25 +46,49 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
+          <Shield className="w-4 h-4 text-accent" />
           <h1 className="font-semibold">Admin Panel</h1>
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="surface-elevated rounded-xl border border-border/50 p-6">
-            <p className="text-sm text-muted-foreground">Total Users</p>
-            <p className="text-3xl font-bold">{stats.users}</p>
-          </div>
-          <div className="surface-elevated rounded-xl border border-border/50 p-6">
-            <p className="text-sm text-muted-foreground">Total Projects</p>
-            <p className="text-3xl font-bold">{stats.projects}</p>
-          </div>
-        </div>
+      <div className="max-w-6xl mx-auto px-6 py-6">
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="bg-muted/50">
+            <TabsTrigger value="overview" className="gap-1.5 text-xs">
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-1.5 text-xs">
+              <Users className="w-3.5 h-3.5" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="gap-1.5 text-xs">
+              <FolderKanban className="w-3.5 h-3.5" />
+              Projects
+            </TabsTrigger>
+            <TabsTrigger value="system" className="gap-1.5 text-xs">
+              <Settings2 className="w-3.5 h-3.5" />
+              System
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview">
+            <AdminOverview />
+          </TabsContent>
+          <TabsContent value="users">
+            <AdminUsers />
+          </TabsContent>
+          <TabsContent value="projects">
+            <AdminProjects />
+          </TabsContent>
+          <TabsContent value="system">
+            <AdminSystem />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

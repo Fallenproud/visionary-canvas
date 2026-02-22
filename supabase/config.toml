@@ -2,3 +2,12 @@ project_id = "yiwdusaeftkwhotnotyk"
 
 [functions.aiko-chat]
 verify_jwt = false
+
+[functions.admin-stats]
+verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.admin-manage-role]
+verify_jwt = false
