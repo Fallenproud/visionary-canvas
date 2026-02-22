@@ -5,10 +5,12 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { VideoModal } from "./VideoModal";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Hero = () => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6 py-20 overflow-hidden">
@@ -59,8 +61,8 @@ export const Hero = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" className="group text-base px-8" onClick={() => navigate("/auth")}>
-                Get Started
+              <Button size="lg" className="group text-base px-8" onClick={() => navigate(user ? "/dashboard" : "/auth")}>
+                {user ? "Go to Dashboard" : "Get Started"}
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
               <Button size="lg" variant="outline" className="text-base px-8" onClick={() => setIsVideoOpen(true)}>
