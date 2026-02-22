@@ -4,8 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { parseCodeBlocks } from "@/lib/code-parser";
 import type { Message, AgentStatus, AgentMode } from "@/types/chat";
+import type { Json } from "@/integrations/supabase/types";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aiko-chat`;
+
+/** Extract file paths from plan markdown file tree section */
+function parsePlannedFiles(planContent: string): string[] {
+  const files: string[] = [];
+  const lines = planContent.split("\n");
+  for (const line of lines) {
+    const match = line.match(/^\s+(\S+\.\w+)\s+\[(NEW|MODIFIED)\]/);
+    if (match) {
+      files.push(match[1]);
+    }
+  }
+  return files;
+}
 
 export function useChat(projectId: string, conversationId: string | null) {
   const { session } = useAuth();
@@ -171,17 +185,44 @@ export function useChat(projectId: string, conversationId: string | null) {
         filesChanged = await applyCodeBlocks(assistantContent);
       }
 
+      // Build execution summary by comparing against plan
+      let executionSummary: Record<string, unknown> | undefined;
+      if (filesChanged.length > 0) {
+        try {
+          const { data: planFile } = await supabase
+            .from("project_files")
+            .select("content")
+            .eq("project_id", projectId)
+            .eq("file_path", "/.aiko/plan.md")
+            .maybeSingle();
+
+          if (planFile?.content) {
+            const plannedFiles = parsePlannedFiles(planFile.content);
+            const actualFiles = filesChanged;
+            const completed = plannedFiles.filter((f) => actualFiles.includes(f));
+            const skipped = plannedFiles.filter((f) => !actualFiles.includes(f));
+            const added = actualFiles.filter((f) => !plannedFiles.includes(f));
+            executionSummary = { planned_files: plannedFiles, actual_files: actualFiles, added, skipped };
+          }
+        } catch {
+          // Non-blocking
+        }
+      }
+
       // Save assistant message with metadata
       if (assistantContent) {
+        const msgMetadata: Record<string, unknown> = {
+          sub_agent: mode,
+          files_changed: filesChanged,
+        };
+        if (status.sub_agents) msgMetadata.sub_agents = status.sub_agents;
+        if (executionSummary) msgMetadata.execution_summary = executionSummary;
+
         await supabase.from("messages").insert({
           conversation_id: convId,
           role: "assistant" as const,
           content: assistantContent,
-          metadata: {
-            sub_agent: mode,
-            files_changed: filesChanged,
-            ...(status.sub_agents ? { sub_agents: status.sub_agents } : {}),
-          },
+          metadata: msgMetadata as Json,
         });
       }
 

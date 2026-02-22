@@ -1,22 +1,29 @@
 import { useState, useEffect } from "react";
-import { ChevronUp, ChevronDown, Pencil, Check, X } from "lucide-react";
+import { ChevronUp, ChevronDown, Pencil, Check, X, GitCompareArrows } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
+import { PlanDiffViewer } from "./PlanDiffViewer";
 
 interface PlanCardProps {
   content: string;
   isLoading: boolean;
   onApprove: (content: string) => void;
   onDismiss: () => void;
+  executionSummary?: {
+    planned_files: string[];
+    actual_files: string[];
+    added: string[];
+    skipped: string[];
+  } | null;
 }
 
-export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardProps) => {
+export const PlanCard = ({ content, isLoading, onApprove, onDismiss, executionSummary }: PlanCardProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
+  const [showDiff, setShowDiff] = useState(false);
 
-  // Sync editContent when content streams in
   useEffect(() => {
     if (!isEditing) {
       setEditContent(content);
@@ -99,8 +106,32 @@ export const PlanCard = ({ content, isLoading, onApprove, onDismiss }: PlanCardP
                 )}
               </div>
 
+              {/* Execution Diff */}
+              <AnimatePresence>
+                {showDiff && executionSummary && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                  >
+                    <PlanDiffViewer summary={executionSummary} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Footer */}
               <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-border/40 pl-5">
+                {executionSummary && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDiff(!showDiff)}
+                    className="gap-1.5 text-xs mr-auto"
+                  >
+                    <GitCompareArrows className="w-3 h-3" />
+                    {showDiff ? "Hide Diff" : "View Diff"}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"

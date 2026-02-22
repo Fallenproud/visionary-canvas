@@ -11,7 +11,6 @@ import { CodeViewer } from "@/components/playground/CodeViewer";
 import { PreviewPanel } from "@/components/playground/PreviewPanel";
 import { ChatPanel } from "@/components/playground/ChatPanel";
 import { RightPaneToggle } from "@/components/playground/RightPaneToggle";
-import { VersionHistoryDropdown } from "@/components/playground/VersionHistoryDropdown";
 import { PlaygroundToolbar } from "@/components/playground/PlaygroundToolbar";
 import { PlaygroundActions } from "@/components/playground/PlaygroundActions";
 import { WorkflowViewer } from "@/components/playground/WorkflowViewer";
@@ -32,10 +31,12 @@ const Playground = () => {
   const queryClient = useQueryClient();
   const { data: project } = useProject(projectId);
   const { data: projectFiles } = useProjectFiles(projectId);
+  const updateFile = useUpdateProjectFile();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [changedFiles, setChangedFiles] = useState<string[]>([]);
   const [rightPane, setRightPane] = useState<RightPaneView>("preview");
+  const [isEditing, setIsEditing] = useState(false);
   const { data: snapshots = [] } = useSnapshots(projectId);
   const createSnapshot = useCreateSnapshot();
   const revertToSnapshot = useRevertToSnapshot();
@@ -173,7 +174,26 @@ const Playground = () => {
 
   const handlePlanApprove = async (planContent: string) => {
     if (!projectId) return;
-    // Persist plan to /.aiko/plan.md
+
+    // Determine next version number
+    const existingPlans = (projectFiles || []).filter((f) =>
+      f.file_path.match(/^\/.aiko\/plans\/v\d+\.md$/)
+    );
+    const nextVersion = existingPlans.length + 1;
+
+    // Save versioned plan
+    await supabase.from("project_files").upsert(
+      {
+        project_id: projectId,
+        file_path: `/.aiko/plans/v${nextVersion}.md`,
+        content: planContent,
+        language: "markdown",
+        version: 1,
+      },
+      { onConflict: "project_id,file_path" }
+    );
+
+    // Save active roadmap
     await supabase.from("project_files").upsert(
       {
         project_id: projectId,
@@ -184,7 +204,31 @@ const Playground = () => {
       },
       { onConflict: "project_id,file_path" }
     );
+
+    // Log approval event as system message
+    if (conversationId) {
+      await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        role: "system" as const,
+        content: `✅ Plan v${nextVersion} approved and saved as roadmap.`,
+        metadata: {
+          event: "plan_approved",
+          plan_version: nextVersion,
+        },
+      });
+    }
+
     queryClient.invalidateQueries({ queryKey: ["project-files", projectId] });
+  };
+
+  const handleSaveFile = async (filePath: string, content: string) => {
+    if (!projectId) return;
+    try {
+      await updateFile.mutateAsync({ projectId, filePath, content });
+      toast.success(`Saved ${filePath}`);
+    } catch {
+      toast.error("Failed to save file");
+    }
   };
 
   return (
@@ -241,13 +285,8 @@ const Playground = () => {
           </span>
         </div>
 
-        {/* Right zone */}
+        {/* Right zone — version history removed, now in ChatPanel */}
         <div className="flex items-center gap-2">
-          <VersionHistoryDropdown
-            snapshots={snapshots}
-            isReverting={revertToSnapshot.isPending}
-            onRevert={handleRevert}
-          />
           <PlaygroundActions />
         </div>
       </div>
@@ -265,6 +304,9 @@ const Playground = () => {
               onFileClick={handleFileClick}
               projectId={projectId || ""}
               onPlanApprove={handlePlanApprove}
+              snapshots={snapshots}
+              isReverting={revertToSnapshot.isPending}
+              onRevert={handleRevert}
             />
           </ResizablePanel>
 
@@ -294,10 +336,17 @@ const Playground = () => {
                       selectedFile={selectedFile}
                       onSelectFile={setSelectedFile}
                       changedFiles={changedFiles}
+                      isEditing={isEditing}
+                      onEditToggle={setIsEditing}
                     />
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <CodeViewer filePath={selectedFile} content={selectedContent} />
+                    <CodeViewer
+                      filePath={selectedFile}
+                      content={selectedContent}
+                      isEditing={isEditing}
+                      onSave={(content) => selectedFile && handleSaveFile(selectedFile, content)}
+                    />
                   </div>
                 </div>
               )}

@@ -5,7 +5,9 @@ import { ChatMessage } from "./ChatMessage";
 import { ModeToggle } from "./ModeToggle";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
 import { PlanCard } from "./PlanCard";
+import { VersionHistoryDropdown } from "./VersionHistoryDropdown";
 import type { Message, AgentMode, AgentStatus } from "@/types/chat";
+import type { Snapshot } from "@/hooks/useSnapshots";
 
 interface ChatPanelProps {
   messages: Message[];
@@ -15,6 +17,9 @@ interface ChatPanelProps {
   onFileClick?: (filePath: string) => void;
   projectId: string;
   onPlanApprove?: (content: string) => void;
+  snapshots?: Snapshot[];
+  isReverting?: boolean;
+  onRevert?: (snapshot: Snapshot) => void;
 }
 
 const staggerVariants = {
@@ -32,7 +37,7 @@ const scaleIn = {
   visible: { scale: 1, opacity: 1, transition: { type: "spring" as const, damping: 15, stiffness: 200 } },
 };
 
-export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick, projectId, onPlanApprove }: ChatPanelProps) => {
+export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick, projectId, onPlanApprove, snapshots = [], isReverting = false, onRevert }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
   const [planDismissed, setPlanDismissed] = useState(false);
@@ -58,6 +63,14 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick, pr
     return planMsg?.content || null;
   }, [messages, planDismissed]);
 
+  // Find latest execution summary for diff view
+  const latestExecutionSummary = useMemo(() => {
+    const execMsg = [...messages].reverse().find(
+      (m) => m.role === "assistant" && m.metadata?.execution_summary
+    );
+    return execMsg?.metadata?.execution_summary || null;
+  }, [messages]);
+
   useEffect(() => {
     setPlanDismissed(false);
   }, [messages.length]);
@@ -76,7 +89,7 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick, pr
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header */}
+      {/* Header with version history */}
       <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-lg bg-accent shadow-md shadow-accent/25 flex items-center justify-center">
           <Sparkles className="w-3.5 h-3.5 text-white" />
@@ -85,6 +98,15 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick, pr
           <span className="font-semibold text-sm leading-tight tracking-tight">AIKO</span>
           <span className="text-[10px] text-muted-foreground leading-tight">AI Assistant</span>
         </div>
+        {onRevert && (
+          <div className="ml-auto">
+            <VersionHistoryDropdown
+              snapshots={snapshots}
+              isReverting={isReverting}
+              onRevert={onRevert}
+            />
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -127,6 +149,7 @@ export const ChatPanel = ({ messages, status, isLoading, onSend, onFileClick, pr
               isLoading={isLoading && status.state === "planning"}
               onApprove={handlePlanApprove}
               onDismiss={() => setPlanDismissed(true)}
+              executionSummary={latestExecutionSummary}
             />
           </motion.div>
         )}
