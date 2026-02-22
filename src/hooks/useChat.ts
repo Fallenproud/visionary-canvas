@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,8 @@ import type { Message, AgentStatus, AgentMode } from "@/types/chat";
 import type { Json } from "@/integrations/supabase/types";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aiko-chat`;
+const MAX_RETRIES = 2;
+const RETRY_DELAYS = [1000, 2000];
 
 /** Extract file paths from plan markdown file tree section */
 function parsePlannedFiles(planContent: string): string[] {
@@ -22,14 +24,52 @@ function parsePlannedFiles(planContent: string): string[] {
   return files;
 }
 
+/** Retry-aware fetch: retries on 5xx or network errors */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = MAX_RETRIES
+): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, options);
+      if (resp.status >= 500 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt] || 2000));
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt] || 2000));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Should never reach here
+  throw new Error("Max retries exceeded");
+}
+
 export function useChat(projectId: string, conversationId: string | null) {
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<AgentStatus>({ state: 'idle' });
   const [isLoading, setIsLoading] = useState(false);
-  // Snapshot of file contents before AI execution, for diff viewing
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const fileSnapshotRef = useRef<Record<string, string>>({});
+
+  // Network status detection
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   const loadMessages = useCallback(async (convId: string) => {
     const { data } = await supabase
@@ -40,7 +80,6 @@ export function useChat(projectId: string, conversationId: string | null) {
     if (data) setMessages(data as Message[]);
   }, []);
 
-  /** Parse code blocks from AI response and upsert into project_files */
   const applyCodeBlocks = useCallback(async (content: string) => {
     if (!projectId) return [];
     const blocks = parseCodeBlocks(content);
@@ -84,29 +123,32 @@ export function useChat(projectId: string, conversationId: string | null) {
   ) => {
     if (!session) return;
 
-    // Input length validation
     if (content.length > 10000) {
       const { toast } = await import("sonner");
       toast.error("Message too long — maximum 10,000 characters.");
       return;
     }
 
+    if (!navigator.onLine) {
+      const { toast } = await import("sonner");
+      toast.error("You're offline. Please check your connection.");
+      return;
+    }
+
     setIsLoading(true);
 
-    // Snapshot current file contents for diff viewing later
     const snapshot: Record<string, string> = {};
     for (const f of projectFiles) {
       snapshot[f.file_path] = f.content;
     }
     fileSnapshotRef.current = snapshot;
-    // Phase 1: Routing status (agent mode only)
+
     if (mode === 'agent') {
       setStatus({ state: 'routing', detail: 'Analyzing request & selecting sub-agents...' });
     } else {
       setStatus({ state: 'planning', detail: 'AIKO is analyzing your request...' });
     }
 
-    // Save user message
     const { data: savedMsg } = await supabase
       .from("messages")
       .insert({ conversation_id: convId, role: "user" as const, content })
@@ -115,7 +157,7 @@ export function useChat(projectId: string, conversationId: string | null) {
     if (savedMsg) setMessages(prev => [...prev, savedMsg as Message]);
 
     try {
-      const resp = await fetch(CHAT_URL, {
+      const resp = await fetchWithRetry(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -153,7 +195,6 @@ export function useChat(projectId: string, conversationId: string | null) {
           textBuffer = textBuffer.slice(newlineIdx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
 
-          // Parse SSE meta comments from the two-phase pipeline
           if (line.startsWith(": meta:")) {
             try {
               const meta = JSON.parse(line.slice(7));
@@ -166,7 +207,7 @@ export function useChat(projectId: string, conversationId: string | null) {
                 }));
               }
             } catch {
-              // ignore malformed meta
+              // ignore
             }
             continue;
           }
@@ -195,14 +236,12 @@ export function useChat(projectId: string, conversationId: string | null) {
         }
       }
 
-      // Apply code blocks from AI response
       let filesChanged: string[] = [];
       if (assistantContent && mode === 'agent') {
         setStatus({ state: 'applying', detail: 'Saving generated files...' });
         filesChanged = await applyCodeBlocks(assistantContent);
       }
 
-      // Build execution summary by comparing against plan
       let executionSummary: Record<string, unknown> | undefined;
       if (filesChanged.length > 0) {
         try {
@@ -226,7 +265,6 @@ export function useChat(projectId: string, conversationId: string | null) {
         }
       }
 
-      // Save assistant message with metadata
       if (assistantContent) {
         const msgMetadata: Record<string, unknown> = {
           sub_agent: mode,
@@ -251,7 +289,6 @@ export function useChat(projectId: string, conversationId: string | null) {
         sub_agents: status.sub_agents,
       });
 
-      // Play completion chime when files were written
       if (filesChanged.length > 0) {
         playCompletionSound();
       }
@@ -271,7 +308,7 @@ export function useChat(projectId: string, conversationId: string | null) {
       setIsLoading(false);
       setTimeout(() => setStatus({ state: 'idle' }), 3000);
     }
-  }, [session, messages, applyCodeBlocks, status.sub_agents]);
+  }, [session, messages, applyCodeBlocks, status.sub_agents, projectId]);
 
-  return { messages, setMessages, status, isLoading, sendMessage, loadMessages, fileSnapshot: fileSnapshotRef.current };
+  return { messages, setMessages, status, isLoading, isOnline, sendMessage, loadMessages, fileSnapshot: fileSnapshotRef.current };
 }
