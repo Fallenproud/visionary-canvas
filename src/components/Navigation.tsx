@@ -1,12 +1,27 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Navigation = () => {
   const navigate = useNavigate();
+  const { user, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const initials = user?.email
+    ? user.email.slice(0, 2).toUpperCase()
+    : "U";
 
   const scrollToSection = (id: string) => {
     setMobileOpen(false);
@@ -22,6 +37,12 @@ export const Navigation = () => {
     { label: "About", action: () => { setMobileOpen(false); navigate("/about"); } },
     { label: "Contact", action: () => scrollToSection("contact") },
   ];
+
+  const handleSignOut = async () => {
+    setMobileOpen(false);
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/70 backdrop-blur-xl border-b border-transparent" style={{ borderImage: 'linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.2), transparent) 1' }}>
@@ -50,17 +71,64 @@ export const Navigation = () => {
 
           {/* CTA + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex"
-              onClick={() => navigate("/auth")}
-            >
-              Sign In
-            </Button>
-            <Button size="sm" onClick={() => navigate("/auth")}>
-              Get Started
-            </Button>
+            {!loading && !user && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                  onClick={() => navigate("/auth")}
+                >
+                  Sign In
+                </Button>
+                <Button size="sm" onClick={() => navigate("/auth")}>
+                  Get Started
+                </Button>
+              </>
+            )}
+
+            {!loading && user && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="hidden sm:flex items-center justify-center rounded-full ring-2 ring-border hover:ring-accent transition-all">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs font-semibold bg-accent text-accent-foreground">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="font-normal">
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/settings")}>
+                      <Settings className="mr-2 h-4 w-4" /> Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
@@ -93,9 +161,33 @@ export const Navigation = () => {
                 </button>
               ))}
               <div className="pt-4 border-t border-border/50 mt-4">
-                <Button className="w-full" onClick={() => { setMobileOpen(false); navigate("/auth"); }}>
-                  Get Started
-                </Button>
+                {!loading && !user && (
+                  <Button className="w-full" onClick={() => { setMobileOpen(false); navigate("/auth"); }}>
+                    Get Started
+                  </Button>
+                )}
+                {!loading && user && (
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => { setMobileOpen(false); navigate("/dashboard"); }}
+                      className="block w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      Dashboard
+                    </button>
+                    <button
+                      onClick={() => { setMobileOpen(false); navigate("/settings"); }}
+                      className="block w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      Settings
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      className="block w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
