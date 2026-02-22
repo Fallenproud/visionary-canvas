@@ -217,7 +217,7 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
       >
         <div className={`flex-1 overflow-hidden flex flex-col ${consoleOpen ? "" : ""}`}>
           <div className={`${consoleOpen ? "flex-1 min-h-0" : "flex-1"} overflow-hidden`}>
-            <div className={`h-full flex items-center justify-center bg-secondary/10 ${isDesktop ? "p-2" : "p-6"}`}>
+            <div className={`h-full ${isDesktop ? "flex flex-col" : "flex items-center justify-center p-6"} bg-secondary/10`}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={device}
@@ -225,8 +225,8 @@ export const PreviewPanel = ({ files, projectId }: PreviewPanelProps) => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="overflow-hidden border-2 border-border/50 shadow-2xl shadow-black/20 bg-white ring-1 ring-border/20 relative flex flex-col"
-                  style={{
+                  className={`overflow-hidden bg-white relative flex flex-col ${isDesktop ? "flex-1 min-h-0" : "border-2 border-border/50 shadow-2xl shadow-black/20 ring-1 ring-border/20"}`}
+                  style={isDesktop ? {} : {
                     width: config.width,
                     height: config.height,
                     borderRadius: config.borderRadius,
