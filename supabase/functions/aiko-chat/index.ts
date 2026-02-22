@@ -271,6 +271,34 @@ Do NOT generate code. Only outline what you would do. Keep it conversational and
 
       systemPrompt += `\n\n## MODE: AGENT\nYou are in Agent mode executing a multi-step pipeline.\n\n## Execution Plan\nApproach: ${routerPlan.approach}\nComplexity: ${routerPlan.complexity}\n\n${agentBriefs}\n\nFollow the execution plan above. Address each sub-agent's focus area in order. Generate complete, working code.`;
 
+      // Auto-generate workflow from plan: instruct AIKO to emit workflow JSON
+      systemPrompt += `\n\n## Workflow Auto-Generation
+When you detect an approved plan with phases/steps, also emit a workflow JSON file as a code block:
+\`\`\`json:/.aiko/workflows/current-plan.json
+{
+  "id": "unique-id",
+  "name": "Workflow Name",
+  "description": "Brief description",
+  "nodes": [{ "id": "n1", "label": "Phase 1 Name", "type": "process", "x": 100, "y": 100 }],
+  "edges": [{ "from": "n1", "to": "n2", "label": "next" }]
+}
+\`\`\`
+Node types: start, process, decision, end. Position nodes with ~200px spacing.
+This workflow will be auto-saved and displayed in the Workflows viewer.`;
+
+      // Inject existing workflow context
+      if (project_files) {
+        const workflowFiles = project_files.filter((f: any) => 
+          f.file_path?.startsWith("/.aiko/workflows/") && f.file_path?.endsWith(".json")
+        );
+        if (workflowFiles.length > 0) {
+          const wfContext = workflowFiles
+            .map((f: any) => `--- ${f.file_path} ---\n${f.content}`)
+            .join("\n\n");
+          systemPrompt += `\n\n## Existing Workflows:\n${wfContext}`;
+        }
+      }
+
       // Emit SSE meta comment with sub-agent info (parsed by client)
       var sseMeta = JSON.stringify({
         sub_agents: routerPlan.sub_agents.map((sa: { name: string }) => sa.name),

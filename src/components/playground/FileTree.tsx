@@ -1,4 +1,4 @@
-import { File, Folder, FolderOpen, CircleDot } from "lucide-react";
+import { File, Folder, FolderOpen, CircleDot, Pencil, Eye } from "lucide-react";
 import { useState } from "react";
 
 interface FileTreeProps {
@@ -6,6 +6,8 @@ interface FileTreeProps {
   selectedFile: string | null;
   onSelectFile: (path: string) => void;
   changedFiles?: string[];
+  isEditing?: boolean;
+  onEditToggle?: (editing: boolean) => void;
 }
 
 interface TreeNode {
@@ -94,9 +96,8 @@ const TreeItem = ({ node, selectedFile, onSelectFile, changedSet, depth = 0 }: {
   );
 };
 
-export const FileTree = ({ files, selectedFile, onSelectFile, changedFiles = [] }: FileTreeProps) => {
+export const FileTree = ({ files, selectedFile, onSelectFile, changedFiles = [], isEditing = false, onEditToggle }: FileTreeProps) => {
   const tree = buildTree(files);
-  // Normalize paths to match tree format (leading slash)
   const changedSet = new Set(changedFiles.map((f) => f.startsWith("/") ? f : `/${f}`));
 
   return (
@@ -105,11 +106,26 @@ export const FileTree = ({ files, selectedFile, onSelectFile, changedFiles = [] 
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Explorer
         </p>
-        {changedFiles.length > 0 && (
-          <span className="text-[10px] font-medium text-green-400 bg-green-400/10 rounded px-1.5 py-0.5">
-            {changedFiles.length} changed
-          </span>
-        )}
+        <div className="flex items-center gap-1">
+          {changedFiles.length > 0 && (
+            <span className="text-[10px] font-medium text-green-400 bg-green-400/10 rounded px-1.5 py-0.5">
+              {changedFiles.length} changed
+            </span>
+          )}
+          {onEditToggle && (
+            <button
+              onClick={() => onEditToggle(!isEditing)}
+              className={`p-1 rounded-md transition-colors ${
+                isEditing
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+              }`}
+              title={isEditing ? "View mode" : "Edit mode"}
+            >
+              {isEditing ? <Eye className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+            </button>
+          )}
+        </div>
       </div>
       {tree.map((node) => (
         <TreeItem key={node.path} node={node} selectedFile={selectedFile} onSelectFile={onSelectFile} changedSet={changedSet} />

@@ -16,6 +16,14 @@ export interface Message {
     status?: 'thinking' | 'writing' | 'applying' | 'done' | 'planning';
     sub_agent?: string;
     files_changed?: string[];
+    event?: 'plan_approved';
+    plan_version?: number;
+    execution_summary?: {
+      planned_files: string[];
+      actual_files: string[];
+      added: string[];
+      skipped: string[];
+    };
   };
   created_at: string;
 }
