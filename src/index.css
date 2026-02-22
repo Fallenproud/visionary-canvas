@@ -42,6 +42,8 @@ All colors MUST be HSL.
     --hero-glow: 217 91% 60%;
     --surface-elevated: 0 0% 14%;
     --surface-subtle: 0 0% 8%;
+    --gradient-start: 217 91% 60%;
+    --gradient-end: 271 81% 56%;
   }
 }
 
@@ -80,6 +82,89 @@ All colors MUST be HSL.
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Phase 2: Production visual utilities */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-border {
+    border-image: linear-gradient(90deg, transparent, hsl(var(--accent) / 0.3), transparent) 1;
+  }
+
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 40% 20%, hsl(var(--gradient-start) / 0.08) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsl(var(--gradient-end) / 0.06) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsl(var(--gradient-start) / 0.05) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, hsl(var(--gradient-end) / 0.04) 0px, transparent 50%);
+  }
+
+  .spotlight {
+    background: radial-gradient(
+      600px circle at var(--spotlight-x, 50%) var(--spotlight-y, 0%),
+      hsl(var(--accent) / 0.12),
+      transparent 40%
+    );
+  }
+
+  .glass {
+    background: hsl(var(--surface-elevated) / 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  .feature-tilt {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  .feature-tilt:hover {
+    transform: rotateX(-2deg) rotateY(2deg);
+  }
+}
+
+/* Shimmer animation for badges */
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.shimmer-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(var(--accent) / 0.15), transparent);
+  animation: shimmer-slide 3s ease-in-out infinite;
+}
+
+/* Pulse glow for highlighted elements */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px -5px hsl(var(--accent) / 0.3); }
+  50% { box-shadow: 0 0 40px -5px hsl(var(--accent) / 0.5); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Grid pattern background */
+.bg-grid {
+  background-image: 
+    linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
 /* Sandpack preview overrides - force preview-only, full bleed */
