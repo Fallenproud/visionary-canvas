@@ -1,182 +1,391 @@
 
 
-# AI Enhancements, Plan Versioning, Workflow Auto-Generation, Editable Explorer, and Version Control Relocation
-
-## Overview
-
-This plan covers 7 enhancements organized into 4 phases. Each phase is self-contained, testable, and does not break the existing code structure.
+# AIKO Platform: Comprehensive Audit, Production Readiness Assessment, and Beta Launch Plan
 
 ---
 
-## Phase 1: Plan Versioning and Approval Event Logging
+## Current State Assessment
 
-**Goal:** Keep a history of all approved plans and log approval events as message metadata.
+### Production Readiness by Area (% complete)
 
-### File Tree
-
-```text
-src/
-  hooks/
-    useChat.ts                      [MODIFIED] - Include plan version counter on approval
-  pages/
-    Playground.tsx                  [MODIFIED] - Version plans as /.aiko/plans/v{N}.md, log approval metadata
-  types/
-    chat.ts                         [MODIFIED] - Add plan_version to Message metadata type
-```
-
-### Subtasks
-
-1. **Plan versioning**: On plan approval in `Playground.tsx`, instead of only upserting `/.aiko/plan.md`, also insert a timestamped version file at `/.aiko/plans/v{N}.md` (query existing plan files to determine N). The latest is always mirrored to `/.aiko/plan.md` for the AI's roadmap context.
-2. **Approval event logging**: When a plan is approved, insert a system-level message into the conversation with `metadata: { event: "plan_approved", plan_version: N, timestamp }`. This gives the AI and the user a traceable approval history in the chat timeline.
-3. **Update `Message.metadata` type** in `src/types/chat.ts` to include optional `event`, `plan_version` fields.
+| Area | Score | Status |
+|------|-------|--------|
+| **Authentication & Security** | 75% | Functional but missing critical hardening |
+| **Database & RLS** | 85% | Solid RLS policies, minor gaps |
+| **Playground Core (Chat + AI)** | 70% | Working but fragile error handling, edge cases |
+| **Playground UI (Explorer/Preview)** | 60% | Explorer doesn't fill pane, no scaffold files |
+| **Landing Page (/)** | 55% | Functional but generic visuals, placeholder content |
+| **Dashboard** | 65% | Works but lacks polish and feedback |
+| **Settings** | 40% | Bare minimum, no plan management or preferences |
+| **Edge Function (aiko-chat)** | 65% | Works but no rate limiting, input validation thin |
+| **Error Handling & Resilience** | 40% | Many silent catches, no global error boundary |
+| **Mobile Responsiveness** | 35% | Landing page partially responsive, playground desktop-only |
+| **Performance & Loading States** | 50% | Some loading states, no skeleton screens, no lazy loading |
+| **Overall Production Readiness** | **~58%** | Viable for closed beta, needs work for public launch |
 
 ---
 
-## Phase 2: Plan-to-Execution Diff View and Auto-Generated Workflows
+## Critical Issues (Must Fix Before Public Beta)
 
-**Goal:** After execution, show a diff between what the plan proposed and what was actually done. Also enable AIKO to auto-generate workflow diagrams from approved plans.
+### 1. Explorer Does Not Fill the Pane
+The explorer view (`rightPane === "explorer"`) uses `pt-4` at the top, and the FileTree + CodeViewer sit in a flex container that does fill the space. However, the `RightPaneToggle` is absolutely positioned at `top-3`, overlapping the content. The `pt-4` offset is too small -- the toggle itself is about 40px tall. The actual issue is that the explorer panel uses `pt-4` (16px) while the toggle button sits at `top-3` (12px) and is ~32px tall. The content starts behind the toggle. This should be `pt-12` like the workflows pane to clear the toggle properly.
+
+**This is NOT placeholder for terminal** -- it is a layout bug. The explorer should stretch fully like the preview pane does.
+
+### 2. No Global Error Boundary
+If any component crashes, the entire app white-screens. React error boundaries are essential for production.
+
+### 3. No Input Sanitization on Edge Function
+The `aiko-chat` function accepts raw user input without length limits or content validation. A user could send megabytes of text.
+
+### 4. Auth Token Not Passed to Edge Function
+The chat function uses `VITE_SUPABASE_PUBLISHABLE_KEY` for auth instead of the user's session token. This means any unauthenticated user could call the edge function directly.
+
+### 5. No Loading/Empty States for Many Flows
+The playground has no skeleton loading state, the dashboard project cards don't have hover previews, and there are no empty states for workflows.
+
+### 6. Footer Shows "2024" -- Should Be Dynamic
+The footer hardcodes `(C) 2024 AIKO` instead of using the current year.
+
+---
+
+## The Plan: 5 Phases to Production Beta
+
+---
+
+## Phase 1: Explorer Fix, Scaffold Files, and Critical Bug Fixes
+
+### What Changes
+
+**Explorer layout fix:**
+- Change the explorer container from `pt-4` to `pt-12` so content clears the RightPaneToggle
+- This matches how the workflows pane already handles it
+
+**Scaffold files for new projects:**
+- When a new project is created, include a set of pre-built, professional boilerplate files that demonstrate best practices
+- These files provide: a CSS reset with design tokens, a reusable Button component, a reusable Card component, utility helpers, and a proper App.tsx that imports and uses them
+- These files are editable by the user but provide a strong starting point with top-tier aesthetics out of the box
+
+**Global Error Boundary:**
+- Add a React error boundary component that catches render crashes
+- Shows a friendly "Something went wrong" UI with a retry button instead of a white screen
+
+**Edge function auth hardening:**
+- Pass the user's actual session bearer token instead of the anon key
+- Add input length validation (max 10,000 chars per message)
+- Add basic rate-limit headers check
 
 ### File Tree
 
 ```text
 src/
   components/
-    playground/
-      PlanDiffViewer.tsx            [NEW] - Side-by-side or inline diff between plan and execution
-      PlanCard.tsx                  [MODIFIED] - Add "View Diff" button post-execution
+    ErrorBoundary.tsx               [NEW] - Global React error boundary
+  lib/
+    templates.ts                    [MODIFIED] - Add professional scaffold files with reusable components
+  pages/
+    Playground.tsx                  [MODIFIED] - Fix explorer pt-4 to pt-12
   hooks/
-    useChat.ts                      [MODIFIED] - Track files_changed per execution, compare to plan file tree
-  types/
-    chat.ts                         [MODIFIED] - Add execution_summary to metadata
+    useChat.ts                      [MODIFIED] - Pass session token, add input validation
+  App.tsx                           [MODIFIED] - Wrap in ErrorBoundary
 supabase/
   functions/
     aiko-chat/
-      index.ts                      [MODIFIED] - Add workflow generation instruction to agent mode post-execution prompt
+      index.ts                      [MODIFIED] - Validate auth token, input length limit
 ```
 
 ### Subtasks
-
-1. **Execution tracking**: After agent mode completes and files are saved, build an `execution_summary` object: `{ planned_files: string[], actual_files: string[], added: string[], skipped: string[] }`. Derive `planned_files` by parsing the file tree section from `/.aiko/plan.md`. Store this in the assistant message metadata.
-2. **PlanDiffViewer component**: A new component that receives the plan markdown and the execution summary. It renders a clean comparison showing:
-   - Planned files vs. actually changed files
-   - Checkmarks for completed items, warnings for skipped/extra files
-   - Rendered as a collapsible section below the PlanCard after execution completes
-3. **"View Diff" button**: Add a button to `PlanCard.tsx` footer (only visible after execution) that toggles the PlanDiffViewer.
-4. **Auto-generate workflow from plan**: Update the edge function's agent-mode prompt to instruct AIKO: when it detects an approved plan that has phases/steps, it should also emit a workflow JSON file at `/.aiko/workflows/{plan-name}.json` with nodes representing each phase and edges showing the phase order. This happens automatically during code generation -- no separate call needed. The workflow type definitions already support this (`WorkflowNode`, `WorkflowEdge`).
-5. **Connect workflows to agent mode**: When the AI executes in agent mode and a workflow exists for the current plan, include the workflow JSON in the system prompt context. This gives the AI awareness of the overall flow graph, not just the markdown plan. Add a line in the edge function that checks for `/.aiko/workflows/*.json` files and appends them as context.
+1. Fix explorer padding: change `pt-4` to `pt-12` in the explorer branch of Playground.tsx (1 line change)
+2. Create `ErrorBoundary.tsx` with try/catch render, friendly fallback UI, and "Reload" button
+3. Wrap `<App />` routes inside `<ErrorBoundary>` in App.tsx
+4. Update `templates.ts` to include professional scaffold files: `/styles.css` (design tokens, utilities), `/components/Button.tsx`, `/components/Card.tsx`, `/utils/helpers.ts`, and a richer `/App.tsx` that uses them
+5. Update `useChat.ts` to use `session.access_token` in the Authorization header instead of the anon key
+6. Add input length check in `useChat.ts` before sending (max 10,000 chars, show toast if exceeded)
+7. Update edge function to validate the Authorization bearer token and reject requests over 15,000 chars total
 
 ---
 
-## Phase 3: Editable File Explorer
+## Phase 2: Landing Page Visual Overhaul
 
-**Goal:** Allow users to edit file content directly in the Explorer pane, toggled by a button inside the explorer.
+### What Changes
+
+The landing page currently has functional components but they look generic for a commercial SaaS product. This phase elevates everything to production-grade visual quality inspired by Linear/Vercel/Stripe aesthetics.
+
+**Navigation:**
+- Add subtle gradient border-bottom instead of flat border
+- Add a mobile hamburger menu (currently hidden on mobile entirely)
+- Logo should use the accent color glow on hover
+
+**Hero:**
+- Add a radial gradient "spotlight" effect behind the hero content
+- Replace the placeholder avatar circles with actual gradient avatars
+- Add a subtle particle/grid background pattern
+- Improve the phone mockup glow to be more dramatic with layered shadows
+- Update the "Now in Beta" badge to use a shimmer animation
+
+**Stats:**
+- Add counter animation on scroll (numbers count up from 0)
+- Add subtle dividers between stat items
+- Use gradient text for the numbers
+
+**Features:**
+- Add staggered scroll-in animations (currently static)
+- Make feature cards have a subtle 3D tilt on hover using CSS perspective
+- Add more features relevant to AIKO (currently only 4, should have 6-8 for a richer grid)
+
+**Demo:**
+- Replace the simple icon animation with a more engaging interactive preview
+- Add a subtle background mesh gradient
+
+**Pricing:**
+- Add annual/monthly toggle
+- Add a "Most Popular" ribbon animation
+- Improve card depth with layered shadows
+
+**Contact:**
+- Add a success animation after form submission (checkmark)
+- Connect the form to actually store submissions in the database
+
+**Footer:**
+- Dynamic year
+- Add social media icon components instead of plain text links
+- Add a newsletter email signup input
 
 ### File Tree
 
 ```text
 src/
   components/
-    playground/
-      CodeViewer.tsx                [MODIFIED] - Add edit mode with a textarea, save button
-      FileTree.tsx                  [MODIFIED] - Add "Edit Mode" toggle button in the explorer header
-  pages/
-    Playground.tsx                  [MODIFIED] - Pass file update handler to CodeViewer
-  hooks/
-    useProject.ts                   [MODIFIED] - Reuse existing useUpdateProjectFile for saves
+    Navigation.tsx                  [MODIFIED] - Mobile menu, gradient border, logo glow
+    Hero.tsx                        [MODIFIED] - Spotlight gradient, shimmer badge, better mockup glow
+    Stats.tsx                       [MODIFIED] - Count-up animation, gradient text, dividers
+    Features.tsx                    [MODIFIED] - More features, scroll animations, 3D tilt hover
+    Demo.tsx                        [MODIFIED] - Better interactive preview, mesh background
+    Pricing.tsx                     [MODIFIED] - Annual/monthly toggle, better card depth
+    Contact.tsx                     [MODIFIED] - Success animation, store to DB
+    Footer.tsx                      [MODIFIED] - Dynamic year, social icons, newsletter input
+  index.css                         [MODIFIED] - New utility classes for gradients, mesh, shimmer
 ```
 
 ### Subtasks
-
-1. **Edit toggle in FileTree header**: Add a small `Pencil` icon button next to the "Explorer" label in `FileTree.tsx`. Clicking it toggles an `isEditing` state that is passed up to the parent.
-2. **Editable CodeViewer**: When `isEditing` is true, replace the `SyntaxHighlighter` with a `<textarea>` styled to match the dark code theme. Add a "Save" button (floppy disk icon) in the file path header bar. On save, call the existing `useUpdateProjectFile` mutation.
-3. **Wire it up in Playground.tsx**: Pass the `isEditing` state and `onSaveFile` handler through to the explorer pane. The `onSaveFile` handler calls `useUpdateProjectFile.mutateAsync({ projectId, filePath, content })`.
-4. **No toolbar clutter**: The edit toggle lives entirely within the Explorer pane header, not in the top bar or any other border.
+1. Update `index.css` with new utility classes: `.bg-mesh-gradient`, `.shimmer-badge`, `.spotlight-radial`, `.gradient-text-hero`
+2. Navigation: add mobile Sheet/drawer menu, gradient bottom-border, hover glow on logo
+3. Hero: add radial spotlight div, shimmer animation on beta badge, gradient avatar placeholders, enhanced phone glow with multiple shadow layers
+4. Stats: add `useInView` + counter animation using `useState`/`useEffect`, gradient text, vertical dividers
+5. Features: expand to 6-8 features (add "Real-time Preview", "Version Control", "Multi-Agent AI", "Template Library"), add `whileInView` stagger animations, CSS perspective tilt on hover
+6. Demo: add mesh gradient background, more interactive transitions
+7. Pricing: add monthly/annual toggle state with discounted annual prices, improve card shadows
+8. Contact: add success checkmark animation after submit, create a `contact_submissions` table and insert on submit
+9. Footer: use `new Date().getFullYear()`, add SVG social icons (Twitter/X, GitHub, LinkedIn), add email newsletter input field
 
 ---
 
-## Phase 4: Relocate Version Control to Chat Pane Border
+## Phase 3: Dashboard, Settings, and Auth Polish
 
-**Goal:** Move the Version History dropdown from the top playground bar to the chat pane's top border, freeing top bar space.
+### What Changes
+
+**Dashboard:**
+- Add project search/filter
+- Add project card preview thumbnails (show last screenshot or placeholder gradient)
+- Add sorting options (name, date, status)
+- Add confirmation dialog before project deletion
+- Add "Duplicate Project" action
+- Empty state should be more engaging with illustration
+
+**Settings:**
+- Add avatar upload section
+- Add "Danger Zone" section with account deletion
+- Add notification preferences (sound toggle for completion chime)
+- Add API key management section (for future integrations)
+- Add theme/appearance section (placeholder for future dark/light toggle)
+
+**Auth:**
+- Add social login buttons (Google, GitHub) as "Coming Soon" placeholders
+- Add password strength indicator
+- Add "Remember me" checkbox
+- Improve the form with better spacing and visual hierarchy
 
 ### File Tree
 
 ```text
 src/
   pages/
-    Playground.tsx                  [MODIFIED] - Remove VersionHistoryDropdown from top bar right zone
+    Dashboard.tsx                   [MODIFIED] - Search, sort, duplicate, delete confirmation, thumbnails
+    Settings.tsx                    [MODIFIED] - Avatar, danger zone, preferences, API keys
+    Auth.tsx                        [MODIFIED] - Social login placeholders, password strength, remember me
   components/
-    playground/
-      ChatPanel.tsx                 [MODIFIED] - Add VersionHistoryDropdown to the chat header, right-aligned next to AIKO title
+    ConfirmDialog.tsx               [NEW] - Reusable confirmation dialog
 ```
 
 ### Subtasks
-
-1. **Remove from top bar**: In `Playground.tsx`, remove `<VersionHistoryDropdown>` from the right zone of the top bar (lines 246-250). Keep `<PlaygroundActions />` in place.
-2. **Add to chat pane header**: In `ChatPanel.tsx`, import `VersionHistoryDropdown` and render it in the existing header div (`px-4 py-3 border-b`), positioned on the right side using `ml-auto`. Pass the required props (`snapshots`, `isReverting`, `onRevert`) through from `Playground.tsx` as new ChatPanel props.
-3. **Update ChatPanel props**: Add `snapshots`, `isReverting`, `onRevert` to `ChatPanelProps` interface.
+1. Create `ConfirmDialog.tsx` -- reusable AlertDialog wrapper for destructive actions
+2. Dashboard: add search input and sort dropdown, project card thumbnails (gradient placeholder based on project name hash), duplicate project mutation, delete confirmation dialog
+3. Settings: add avatar upload to storage bucket, add danger zone with "Delete Account" behind confirmation, add sound preference toggle (persisted to profile), add placeholder sections for API keys and appearance
+4. Auth: add disabled Google/GitHub buttons with "Coming Soon" badges, add password strength meter using regex scoring, add "Remember me" checkbox
 
 ---
 
-## Complete File Tree of All Changes
+## Phase 4: Playground Robustness and Polish
+
+### What Changes
+
+**Error resilience:**
+- Add retry logic for failed edge function calls (exponential backoff, max 2 retries)
+- Add network disconnection detection with reconnect banner
+- Add message delivery confirmation (visual checkmark after DB save)
+- Handle conversation load failures gracefully
+
+**Loading states:**
+- Add skeleton loading for project files in the explorer
+- Add skeleton for chat messages while loading conversation history
+- Add a proper loading splash for the playground while project data loads
+
+**Chat improvements:**
+- Add message timestamps (hover to see exact time)
+- Add "Copy" button on code blocks in assistant messages
+- Add "Regenerate" button on the last assistant message
+- Add typing indicator while streaming
+- Keyboard shortcuts: Cmd+Enter to send, Cmd+K to clear chat
+
+**Preview improvements:**
+- Add console output panel below the preview (collapsible) to show Sandpack console errors
+- Add a "Loading failed" state if Sandpack crashes
+
+**Explorer improvements:**
+- Add file search (Cmd+P to search by filename)
+- Add "New File" and "Delete File" actions
+- Show file size indicators
+
+### File Tree
 
 ```text
 src/
+  hooks/
+    useChat.ts                      [MODIFIED] - Retry logic, network detection, delivery confirmation
   components/
     playground/
-      ChatPanel.tsx                 [MODIFIED] - Add version history to chat header
-      CodeViewer.tsx                [MODIFIED] - Add edit mode with textarea + save
-      FileTree.tsx                  [MODIFIED] - Add edit toggle button in header
-      PlanCard.tsx                  [MODIFIED] - Add "View Diff" button post-execution
-      PlanDiffViewer.tsx            [NEW] - Plan vs execution comparison view
-  hooks/
-    useChat.ts                      [MODIFIED] - Execution summary tracking, plan file parsing
-    useProject.ts                   [MODIFIED] - Reuse useUpdateProjectFile (no new code needed)
+      ChatPanel.tsx                 [MODIFIED] - Timestamps, copy, regenerate, keyboard shortcuts
+      ChatMessage.tsx               [MODIFIED] - Code block copy button, timestamp tooltip
+      PreviewPanel.tsx              [MODIFIED] - Console panel, error state
+      FileTree.tsx                  [MODIFIED] - Search, new/delete file actions, file size
+      CodeViewer.tsx                [MODIFIED] - Skeleton loading state
+      PlaygroundSkeleton.tsx        [NEW] - Full-page skeleton loading for playground
   pages/
-    Playground.tsx                  [MODIFIED] - Plan versioning, version control relocation, edit mode wiring
-  types/
-    chat.ts                         [MODIFIED] - Add event, plan_version, execution_summary to metadata
+    Playground.tsx                  [MODIFIED] - Loading splash, keyboard shortcut registration
+```
+
+### Subtasks
+1. Add retry logic in `useChat.ts`: wrap the fetch in a loop with max 2 retries and 1s/2s backoff, only retry on 5xx or network errors
+2. Add network status detection: `navigator.onLine` listener, show a yellow "Reconnecting..." banner at top of chat panel
+3. Add `PlaygroundSkeleton.tsx` -- shown while project/files are loading (pulsing layout matching the real UI)
+4. ChatMessage: add hover tooltip showing `format(msg.created_at, "MMM d, h:mm a")`, add copy-to-clipboard button on code blocks
+5. ChatPanel: add "Regenerate" button (resends the last user message), add Cmd+Enter shortcut, add Cmd+K clear chat shortcut
+6. PreviewPanel: add collapsible console error panel using Sandpack's error hooks
+7. FileTree: add search input at top (Cmd+P focus), add context menu or buttons for "New File" / "Delete File"
+8. CodeViewer: add skeleton shimmer while file content loads
+
+---
+
+## Phase 5: Final Production Hardening
+
+### What Changes
+
+**Performance:**
+- Add React.lazy() for route-level code splitting (Playground, Dashboard, Admin, Settings)
+- Add Suspense boundaries with loading fallbacks
+- Memoize expensive computations (sandpack file conversion, tree building)
+
+**SEO and Meta:**
+- Add proper meta tags to index.html (title, description, og:image, twitter:card)
+- Add structured data (JSON-LD) for the landing page
+- Add proper page titles per route using useEffect or a layout component
+
+**Accessibility:**
+- Add proper ARIA labels to all interactive elements
+- Add keyboard navigation for the file tree (arrow keys)
+- Add focus management for modal dialogs
+- Ensure color contrast meets WCAG AA
+
+**Security final pass:**
+- Enable leaked password protection (currently warned by linter)
+- Add CSRF token validation for state-changing operations
+- Add Content-Security-Policy headers
+- Rate limit the edge function at the function level (track IP/user in a simple counter)
+- Sanitize all user-displayed content to prevent XSS
+
+**Analytics and Monitoring:**
+- Add basic usage tracking (page views, project creates, messages sent) using a simple analytics table
+- Add error logging to a dedicated table for post-launch debugging
+
+**Legal/Compliance:**
+- Add Privacy Policy page (even if placeholder)
+- Add Terms of Service page (even if placeholder)
+- Add cookie consent banner
+- Add GDPR data export functionality in Settings
+
+### File Tree
+
+```text
+src/
+  App.tsx                           [MODIFIED] - Lazy loading, Suspense, page titles
+  pages/
+    Privacy.tsx                     [NEW] - Privacy policy page
+    Terms.tsx                       [NEW] - Terms of service page
+  components/
+    SEOHead.tsx                     [NEW] - Per-page meta tag management
+    CookieConsent.tsx               [NEW] - Cookie consent banner
+  hooks/
+    usePageTitle.ts                 [NEW] - Set document.title per route
+  index.html                        [MODIFIED] - Meta tags, OG image, structured data
 supabase/
   functions/
     aiko-chat/
-      index.ts                      [MODIFIED] - Auto-workflow generation prompt, workflow context injection
+      index.ts                      [MODIFIED] - Rate limiting, input sanitization
 ```
+
+### Subtasks
+1. Add React.lazy() imports for Dashboard, Playground, Settings, Admin, About pages with Suspense fallbacks
+2. Create `usePageTitle.ts` hook and apply to all pages
+3. Create `SEOHead.tsx` or update `index.html` with proper meta tags
+4. Create placeholder `Privacy.tsx` and `Terms.tsx` pages, add routes
+5. Create `CookieConsent.tsx` -- a bottom banner with Accept/Decline stored in localStorage
+6. Add ARIA labels audit: file tree buttons, toolbar icons, chat input, mode toggle
+7. Enable leaked password protection via auth configuration
+8. Add rate limiting in edge function: simple in-memory counter per request (log and reject after 30 req/min)
+9. Create `analytics_events` table and a simple `trackEvent(name, metadata)` utility
+10. Add error logging: create `error_logs` table, add global window.onerror handler that inserts errors
 
 ---
 
-## Technical Details
+## Database Changes Required
 
-### Plan Versioning
-- Query `project_files` where `file_path LIKE '/.aiko/plans/v%.md'` to determine the next version number.
-- Upsert both `/.aiko/plans/v{N}.md` (archive) and `/.aiko/plan.md` (active roadmap).
-- No new database tables or migrations needed -- uses existing `project_files` with `onConflict: "project_id,file_path"`.
+| Table | Operation | Purpose |
+|-------|-----------|---------|
+| `contact_submissions` | CREATE | Store contact form submissions |
+| `analytics_events` | CREATE | Track usage events |
+| `error_logs` | CREATE | Log frontend errors |
 
-### Execution Summary Derivation
-- Parse the `### File Tree` section from `/.aiko/plan.md` using a simple regex to extract file paths and their `[NEW]`/`[MODIFIED]` markers.
-- Compare against the actual `files_changed` array from `applyCodeBlocks`.
-- Store the diff object in the assistant message's `metadata.execution_summary`.
+No changes to existing tables. All new tables will have proper RLS policies scoped to user ownership.
 
-### Workflow Auto-Generation
-- The edge function prompt instructs AIKO to emit a code block formatted as `json:/.aiko/workflows/{name}.json` containing the workflow structure.
-- The existing `applyCodeBlocks` function in `useChat.ts` will automatically save this file to `project_files`.
-- The existing `useWorkflows` hook will automatically pick it up and display it in the Workflows viewer.
+---
 
-### Editable CodeViewer
-- Uses a monospace `<textarea>` with `bg-transparent`, matching the existing dark theme.
-- Save triggers `supabase.from("project_files").upsert(...)` via the existing mutation hook.
-- The edit toggle is a small icon button -- no layout disruption.
+## What This Plan Does NOT Change
+- Existing database schema for projects, files, conversations, messages, snapshots
+- The Sandpack preview engine and its configuration
+- The SSE streaming protocol
+- The multi-agent routing architecture
+- The existing RLS policies (already solid)
+- The workflow canvas SVG renderer
 
-### Version Control Relocation
-- The `VersionHistoryDropdown` component is self-contained and only needs its 3 props.
-- Moving it into `ChatPanel` requires threading these props from `Playground.tsx`.
-- The chat header already has a flex layout with `items-center gap-2.5`, so adding the dropdown with `ml-auto` positions it naturally on the right.
+---
 
-### What Does NOT Change
-- Database schema (no migrations)
-- Streaming protocol (still SSE)
-- File structure and routing
-- Preview panel, Sandpack config
-- Authentication flow
-- Top bar left/center zones (toolbar and project name stay as-is)
-- Workflow canvas component (already built)
-- RightPaneToggle (already has 3 tabs)
+## Recommended Launch Order
+
+1. **Phase 1** (Critical fixes) -- Do this FIRST, everything else depends on stability
+2. **Phase 2** (Landing page) -- This is what new visitors see first
+3. **Phase 4** (Playground polish) -- This is what paying users interact with daily
+4. **Phase 3** (Dashboard/Settings/Auth) -- Important but less urgent than the core product
+5. **Phase 5** (Hardening) -- Final pass before opening the gates
+
+Each phase is independently deployable and testable. No phase depends on a later phase.
 
