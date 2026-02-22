@@ -335,7 +335,7 @@ const Playground = () => {
                   <WorkflowViewer workflows={workflows} />
                 </div>
               ) : (
-                <div className="h-full pt-4 flex relative">
+                <div className="h-full pt-12 flex relative">
                   <div className="w-1/3 border-r border-border/30 overflow-hidden">
                     <FileTree
                       files={(projectFiles || []).map((f) => ({
