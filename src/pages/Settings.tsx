@@ -110,9 +110,14 @@ const Settings = () => {
         {/* Plan */}
         <div className="surface-elevated rounded-xl border border-border/50 p-6">
           <h2 className="text-lg font-semibold mb-2">Plan</h2>
-          <p className="text-muted-foreground text-sm">
-            Current plan: <span className="capitalize font-medium text-foreground">{plan}</span>
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground text-sm">
+              Current plan: <span className="capitalize font-medium text-foreground">{plan}</span>
+            </p>
+            <Button variant="outline" size="sm" onClick={() => navigate("/#pricing")}>
+              Manage Plan
+            </Button>
+          </div>
         </div>
 
         {/* Preferences */}
