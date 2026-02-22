@@ -8,8 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Upload, Trash2, Volume2, VolumeX, Key, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Settings = () => {
+  usePageTitle("Settings");
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();

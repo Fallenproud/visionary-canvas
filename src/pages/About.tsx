@@ -2,6 +2,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Users, Target, Heart, Award } from "lucide-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const values = [
   {
@@ -27,6 +28,7 @@ const values = [
 ];
 
 const About = () => {
+  usePageTitle("About");
   return (
     <div className="min-h-screen">
       <Navigation />

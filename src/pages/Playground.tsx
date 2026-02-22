@@ -24,8 +24,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { AgentMode } from "@/types/chat";
 import type { RightPaneView } from "@/components/playground/RightPaneToggle";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Playground = () => {
+  usePageTitle("Playground");
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();

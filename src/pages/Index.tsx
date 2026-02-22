@@ -6,8 +6,10 @@ import { Pricing } from "@/components/Pricing";
 import { Demo } from "@/components/Demo";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Index = () => {
+  usePageTitle("Imagine with AI Design Tools");
   return (
     <div className="min-h-screen">
       <Navigation />
