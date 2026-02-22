@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useProject, useProjectFiles, useUpdateProjectFile } from "@/hooks/useProject";
@@ -14,6 +14,7 @@ import { RightPaneToggle } from "@/components/playground/RightPaneToggle";
 import { PlaygroundToolbar } from "@/components/playground/PlaygroundToolbar";
 import { PlaygroundActions } from "@/components/playground/PlaygroundActions";
 import { WorkflowViewer } from "@/components/playground/WorkflowViewer";
+import { FileDiffViewer } from "@/components/playground/FileDiffViewer";
 import { projectFilesToSandpackFiles } from "@/lib/sandpack-config";
 import { useSnapshots, useCreateSnapshot, useRevertToSnapshot } from "@/hooks/useSnapshots";
 import { useWorkflows } from "@/hooks/useWorkflows";
@@ -40,11 +41,12 @@ const Playground = () => {
   const { data: snapshots = [] } = useSnapshots(projectId);
   const createSnapshot = useCreateSnapshot();
   const revertToSnapshot = useRevertToSnapshot();
-  const { messages, status, isLoading, sendMessage, loadMessages } = useChat(
+  const { messages, status, isLoading, sendMessage, loadMessages, fileSnapshot } = useChat(
     projectId || "",
     conversationId
   );
   const workflows = useWorkflows(projectFiles);
+  const [diffFile, setDiffFile] = useState<string | null>(null);
 
   // Editable project name
   const [isEditingName, setIsEditingName] = useState(false);
@@ -161,6 +163,13 @@ const Playground = () => {
     setRightPane("explorer");
     setSelectedFile(filePath.startsWith("/") ? filePath : `/${filePath}`);
   };
+
+  const handleChangedFileClick = useCallback((filePath: string) => {
+    setRightPane("explorer");
+    const normalised = filePath.startsWith("/") ? filePath : `/${filePath}`;
+    setSelectedFile(normalised);
+    setDiffFile(normalised);
+  }, []);
 
   const handleRevert = async (snapshot: (typeof snapshots)[0]) => {
     if (!projectId) return;
@@ -326,7 +335,7 @@ const Playground = () => {
                   <WorkflowViewer workflows={workflows} />
                 </div>
               ) : (
-                <div className="h-full pt-4 flex">
+                <div className="h-full pt-4 flex relative">
                   <div className="w-1/3 border-r border-border/30 overflow-hidden">
                     <FileTree
                       files={(projectFiles || []).map((f) => ({
@@ -341,6 +350,7 @@ const Playground = () => {
                       agentStatus={status}
                       activeWritingFiles={status.state === "writing" || status.state === "applying" ? changedFiles : []}
                       onDismissChanges={() => setChangedFiles([])}
+                      onChangedFileClick={handleChangedFileClick}
                     />
                   </div>
                   <div className="flex-1 overflow-hidden">
@@ -351,6 +361,14 @@ const Playground = () => {
                       onSave={(content) => selectedFile && handleSaveFile(selectedFile, content)}
                     />
                   </div>
+                  {diffFile && (
+                    <FileDiffViewer
+                      filePath={diffFile}
+                      beforeContent={fileSnapshot[diffFile] || ""}
+                      afterContent={projectFiles?.find((f) => f.file_path === diffFile)?.content || ""}
+                      onClose={() => setDiffFile(null)}
+                    />
+                  )}
                 </div>
               )}
             </div>

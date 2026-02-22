@@ -13,6 +13,7 @@ interface FileTreeProps {
   agentStatus?: AgentStatus;
   activeWritingFiles?: string[];
   onDismissChanges?: () => void;
+  onChangedFileClick?: (filePath: string) => void;
 }
 
 interface TreeNode {
@@ -104,7 +105,7 @@ const TreeItem = ({ node, selectedFile, onSelectFile, changedSet, writingSet, de
   );
 };
 
-export const FileTree = ({ files, selectedFile, onSelectFile, changedFiles = [], isEditing = false, onEditToggle, agentStatus, activeWritingFiles = [], onDismissChanges }: FileTreeProps) => {
+export const FileTree = ({ files, selectedFile, onSelectFile, changedFiles = [], isEditing = false, onEditToggle, agentStatus, activeWritingFiles = [], onDismissChanges, onChangedFileClick }: FileTreeProps) => {
   const tree = buildTree(files);
   const changedSet = new Set(changedFiles.map((f) => f.startsWith("/") ? f : `/${f}`));
   const writingSet = new Set(activeWritingFiles.map((f) => f.startsWith("/") ? f : `/${f}`));
@@ -147,7 +148,7 @@ export const FileTree = ({ files, selectedFile, onSelectFile, changedFiles = [],
         <FileActivityIndicator status={agentStatus} activeFiles={activeWritingFiles} />
       )}
       {!isActive && changedFiles.length > 0 && onDismissChanges && (
-        <FileChangeNotification files={changedFiles} onDismiss={onDismissChanges} />
+        <FileChangeNotification files={changedFiles} onDismiss={onDismissChanges} onFileClick={onChangedFileClick} />
       )}
       {tree.map((node) => (
         <TreeItem key={node.path} node={node} selectedFile={selectedFile} onSelectFile={onSelectFile} changedSet={changedSet} writingSet={writingSet} />

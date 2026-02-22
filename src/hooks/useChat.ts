@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { parseCodeBlocks } from "@/lib/code-parser";
+import { playCompletionSound } from "@/lib/completion-sound";
 import type { Message, AgentStatus, AgentMode } from "@/types/chat";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -27,6 +28,8 @@ export function useChat(projectId: string, conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<AgentStatus>({ state: 'idle' });
   const [isLoading, setIsLoading] = useState(false);
+  // Snapshot of file contents before AI execution, for diff viewing
+  const fileSnapshotRef = useRef<Record<string, string>>({});
 
   const loadMessages = useCallback(async (convId: string) => {
     const { data } = await supabase
@@ -82,6 +85,12 @@ export function useChat(projectId: string, conversationId: string | null) {
     if (!session) return;
     setIsLoading(true);
 
+    // Snapshot current file contents for diff viewing later
+    const snapshot: Record<string, string> = {};
+    for (const f of projectFiles) {
+      snapshot[f.file_path] = f.content;
+    }
+    fileSnapshotRef.current = snapshot;
     // Phase 1: Routing status (agent mode only)
     if (mode === 'agent') {
       setStatus({ state: 'routing', detail: 'Analyzing request & selecting sub-agents...' });
@@ -233,6 +242,11 @@ export function useChat(projectId: string, conversationId: string | null) {
           : 'Response complete',
         sub_agents: status.sub_agents,
       });
+
+      // Play completion chime when files were written
+      if (filesChanged.length > 0) {
+        playCompletionSound();
+      }
     } catch (err) {
       console.error("Chat error:", err);
       setStatus({ state: 'idle' });
@@ -251,5 +265,5 @@ export function useChat(projectId: string, conversationId: string | null) {
     }
   }, [session, messages, applyCodeBlocks, status.sub_agents]);
 
-  return { messages, setMessages, status, isLoading, sendMessage, loadMessages };
+  return { messages, setMessages, status, isLoading, sendMessage, loadMessages, fileSnapshot: fileSnapshotRef.current };
 }
