@@ -166,7 +166,7 @@ export function useChat(projectId: string, conversationId: string | null) {
         body: JSON.stringify({
           messages: [...messages, { role: "user", content }].map(m => ({ role: m.role, content: m.content })),
           mode,
-          project_files: projectFiles.slice(0, 10),
+          project_files: projectFiles.slice(0, 25),
         }),
       });
 
