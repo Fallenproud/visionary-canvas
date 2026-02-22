@@ -536,7 +536,77 @@ serve(async (req) => {
       );
     }
 
-    const { messages, mode, project_files } = await req.json();
+    // ── Parse and validate input ──
+    const rawBody = await req.json();
+
+    // Validate mode
+    const allowedModes = ["plan", "agent"];
+    if (!rawBody.mode || !allowedModes.includes(rawBody.mode)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid mode. Must be 'plan' or 'agent'." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate messages array
+    if (!Array.isArray(rawBody.messages) || rawBody.messages.length === 0 || rawBody.messages.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Messages must be a non-empty array with at most 100 items." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const allowedRoles = ["user", "assistant", "system"];
+    for (const msg of rawBody.messages) {
+      if (!msg || typeof msg.content !== "string" || !allowedRoles.includes(msg.role)) {
+        return new Response(
+          JSON.stringify({ error: "Each message must have a valid role ('user', 'assistant', 'system') and string content." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (msg.content.length > 15000) {
+        return new Response(
+          JSON.stringify({ error: "Individual message content must not exceed 15,000 characters." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Validate project_files if provided
+    const filePathRegex = /^[\/.a-zA-Z0-9_-]+(\.[a-zA-Z0-9]+)*$/;
+    if (rawBody.project_files != null) {
+      if (!Array.isArray(rawBody.project_files) || rawBody.project_files.length > 50) {
+        return new Response(
+          JSON.stringify({ error: "project_files must be an array with at most 50 items." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      for (const f of rawBody.project_files) {
+        if (!f || typeof f.file_path !== "string" || typeof f.content !== "string") {
+          return new Response(
+            JSON.stringify({ error: "Each project file must have a string file_path and content." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (f.file_path.includes("..") || !filePathRegex.test(f.file_path)) {
+          return new Response(
+            JSON.stringify({ error: "Invalid file path detected." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (f.content.length > 100000) {
+          return new Response(
+            JSON.stringify({ error: "Individual file content must not exceed 100,000 characters." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+    const messages = rawBody.messages;
+    const mode = rawBody.mode;
+    const project_files = rawBody.project_files;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
