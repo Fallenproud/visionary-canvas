@@ -305,7 +305,7 @@ const Playground = () => {
       </div>
 
       {/* 2-pane layout */}
-      <div className="flex-1 overflow-hidden">
+      <div className="relative z-10 flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
           {/* Left: Chat */}
           <ResizablePanel defaultSize={38} minSize={28} maxSize={50}>

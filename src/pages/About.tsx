@@ -30,7 +30,10 @@ const values = [
 const About = () => {
   usePageTitle("About");
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-atmosphere relative">
+      <div className="aurora" aria-hidden="true" />
+      <div className="noise-grain" aria-hidden="true" />
+      <div className="relative z-10">
       <Navigation />
 
       {/* Hero */}
@@ -41,7 +44,7 @@ const About = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 gradient-text">
               About AIKO
             </h1>
             <p className="text-xl text-muted-foreground leading-relaxed">
@@ -121,6 +124,7 @@ const About = () => {
       </section>
 
       <Footer />
+      </div>
     </div>
   );
 };
