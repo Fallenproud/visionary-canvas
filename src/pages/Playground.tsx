@@ -21,6 +21,7 @@ import { useWorkflows } from "@/hooks/useWorkflows";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import type { AgentMode } from "@/types/chat";
 import type { RightPaneView } from "@/components/playground/RightPaneToggle";
@@ -243,9 +244,11 @@ const Playground = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-atmosphere relative">
+      <div className="aurora opacity-40" aria-hidden="true" />
+      <div className="noise-grain" aria-hidden="true" />
       {/* Top bar */}
-      <div className="h-12 border-b border-border/40 flex items-center px-3 gap-2 shrink-0 bg-card/60 backdrop-blur-xl">
+      <div className="relative z-10 h-12 border-b border-border/40 flex items-center px-3 gap-2 shrink-0 glass">
         {/* Left zone */}
         <div className="flex items-center gap-2">
           <Button
@@ -262,9 +265,8 @@ const Playground = () => {
 
         {/* Center zone: project name + status */}
         <div className="flex-1 flex items-center justify-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-accent shadow-sm shadow-accent/20 flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-[10px]">A</span>
-          </div>
+          <Logo size={22} withWordmark={false} animate={false} />
+
           {isEditingName ? (
             <div className="flex items-center gap-1">
               <input
