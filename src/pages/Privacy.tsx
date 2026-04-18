@@ -6,9 +6,10 @@ const Privacy = () => {
   usePageTitle("Privacy Policy");
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-atmosphere relative overflow-hidden">
+      <div className="aurora opacity-50" />
       <Navigation />
-      <div className="max-w-3xl mx-auto px-6 pt-32 pb-20">
+      <div className="max-w-3xl mx-auto px-6 pt-32 pb-20 relative z-10">
         <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
         <p className="text-sm text-muted-foreground mb-10">Last updated: February 2026</p>
 

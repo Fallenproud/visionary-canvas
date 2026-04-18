@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Logo } from "@/components/Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,11 +52,8 @@ export const Navigation = () => {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <button onClick={() => navigate("/")} className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center transition-shadow group-hover:shadow-[0_0_20px_-3px_hsl(217_91%_60%_/_0.5)]">
-              <span className="text-accent-foreground font-bold text-sm">A</span>
-            </div>
-            <span className="font-semibold text-lg tracking-tight">AIKO</span>
+          <button onClick={() => navigate("/")} className="magnetic group">
+            <Logo />
           </button>
 
           {/* Desktop links */}

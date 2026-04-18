@@ -63,7 +63,7 @@ export const Stats = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="text-center relative"
             >
-              <div className="text-4xl md:text-5xl font-bold mb-2 gradient-text">
+              <div className="text-4xl md:text-5xl font-bold mb-2 gradient-text number-glow">
                 <CountUp target={stat.value} suffix={stat.suffix} prefix={stat.prefix} />
               </div>
               <div className="text-sm text-muted-foreground">{stat.label}</div>

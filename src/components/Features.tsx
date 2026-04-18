@@ -91,13 +91,15 @@ export const Features = () => {
             <motion.div
               key={index}
               variants={item}
-              className="group relative surface-elevated rounded-2xl p-7 border border-border/50 hover:border-accent/30 transition-all duration-500 feature-tilt"
+              whileHover={{ y: -4 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="group relative surface-elevated rounded-2xl p-7 border border-border/50 hover:border-accent/40 transition-all duration-500 feature-tilt conic-border"
             >
-              {/* Hover glow */}
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-accent/5 to-transparent" />
+              {/* Hover glow trail */}
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-accent/8 via-transparent to-transparent" />
 
               <div className="relative">
-                <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center mb-5 group-hover:bg-accent/15 transition-colors">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500 ring-1 ring-accent/10">
                   <feature.icon className="w-5 h-5 text-accent" />
                 </div>
 

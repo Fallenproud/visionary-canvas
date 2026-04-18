@@ -18,6 +18,7 @@ import {
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { Logo } from "@/components/Logo";
 
 type SortKey = "updated" | "name" | "status";
 
@@ -81,16 +82,14 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <div className="absolute inset-0 bg-mesh opacity-50 pointer-events-none" />
       {/* Top bar */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">A</span>
-            </div>
-            <span className="font-semibold text-lg">AIKO</span>
-          </div>
+          <button className="magnetic" onClick={() => navigate("/")}>
+            <Logo />
+          </button>
           <div className="flex items-center gap-3">
             {isAdmin && (
               <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} title="Admin Panel">
@@ -210,7 +209,8 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="surface-elevated rounded-xl border border-border/50 overflow-hidden hover:border-muted-foreground/30 transition-colors group"
+                whileHover={{ y: -3 }}
+                className="surface-elevated rounded-xl border border-border/50 overflow-hidden hover:border-accent/30 transition-all conic-border group"
               >
                 {/* Gradient thumbnail */}
                 <div

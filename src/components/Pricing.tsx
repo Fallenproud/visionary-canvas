@@ -130,16 +130,18 @@ export const Pricing = () => {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative surface-elevated rounded-2xl p-8 border transition-all duration-300 ${
+              whileHover={{ y: -6, scale: plan.highlighted ? 1.03 : 1.01 }}
+              transition={{ duration: 0.5, delay: index * 0.1, type: "spring", stiffness: 200, damping: 22 }}
+              className={`relative surface-elevated rounded-2xl p-8 border transition-all duration-300 conic-border ${
                 plan.highlighted
                   ? "border-accent/50 animate-pulse-glow scale-[1.02]"
                   : "border-border/50 hover:border-border"
               }`}
+              data-active={plan.highlighted ? "true" : undefined}
             >
               {plan.highlighted && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="shimmer-badge px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold tracking-wide uppercase">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                  <span className="shimmer-badge px-4 py-1.5 rounded-full bg-gradient-to-r from-accent to-[hsl(var(--gradient-mid))] text-accent-foreground text-xs font-semibold tracking-wide uppercase shadow-lg shadow-accent/30">
                     Most Popular
                   </span>
                 </div>
