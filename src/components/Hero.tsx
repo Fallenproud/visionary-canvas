@@ -16,14 +16,20 @@ export const Hero = () => {
     <section className="relative min-h-screen flex items-center justify-center px-6 py-20 overflow-hidden">
       <VideoModal open={isVideoOpen} onOpenChange={setIsVideoOpen} />
 
+      {/* Aurora atmospheric blobs */}
+      <div className="aurora" />
+
       {/* Grid pattern */}
-      <div className="absolute inset-0 bg-grid opacity-30" />
+      <div className="absolute inset-0 bg-grid opacity-20" />
 
       {/* Spotlight radial */}
       <div className="absolute inset-0 spotlight" />
 
       {/* Mesh gradient overlay */}
       <div className="absolute inset-0 bg-mesh" />
+
+      {/* Noise grain */}
+      <div className="noise-grain" />
 
       {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />

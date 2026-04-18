@@ -44,33 +44,38 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-background relative">
+      <div className="absolute inset-0 bg-mesh opacity-40 pointer-events-none" />
+      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50 relative">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <Shield className="w-4 h-4 text-accent" />
           <h1 className="font-semibold">Admin Panel</h1>
+          <span className="ml-2 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-dot-pulse" />
+            Live
+          </span>
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-6 relative">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="overview" className="gap-1.5 text-xs">
+          <TabsList className="bg-muted/50 backdrop-blur-sm">
+            <TabsTrigger value="overview" className="gap-1.5 text-xs data-[state=active]:shadow-[0_0_20px_-5px_hsl(217_91%_60%/0.5)]">
               <LayoutDashboard className="w-3.5 h-3.5" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-1.5 text-xs">
+            <TabsTrigger value="users" className="gap-1.5 text-xs data-[state=active]:shadow-[0_0_20px_-5px_hsl(217_91%_60%/0.5)]">
               <Users className="w-3.5 h-3.5" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="projects" className="gap-1.5 text-xs">
+            <TabsTrigger value="projects" className="gap-1.5 text-xs data-[state=active]:shadow-[0_0_20px_-5px_hsl(217_91%_60%/0.5)]">
               <FolderKanban className="w-3.5 h-3.5" />
               Projects
             </TabsTrigger>
-            <TabsTrigger value="system" className="gap-1.5 text-xs">
+            <TabsTrigger value="system" className="gap-1.5 text-xs data-[state=active]:shadow-[0_0_20px_-5px_hsl(217_91%_60%/0.5)]">
               <Settings2 className="w-3.5 h-3.5" />
               System
             </TabsTrigger>

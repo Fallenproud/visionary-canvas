@@ -45,13 +45,17 @@ const AdminOverview = () => {
           : kpis.map((kpi) => (
               <div
                 key={kpi.label}
-                className="rounded-xl border border-border/50 p-4 surface-elevated"
+                className="relative rounded-xl border border-border/50 p-4 surface-elevated overflow-hidden group hover:border-accent/30 transition-colors"
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <kpi.icon className="w-3.5 h-3.5 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
+                {/* Gradient accent corner */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-accent/15 via-transparent to-transparent rounded-bl-full pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <kpi.icon className="w-3.5 h-3.5 text-accent" />
+                    <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
+                  </div>
+                  <p className="text-2xl font-bold gradient-text">{kpi.value.toLocaleString()}</p>
                 </div>
-                <p className="text-2xl font-bold">{kpi.value.toLocaleString()}</p>
               </div>
             ))}
       </div>

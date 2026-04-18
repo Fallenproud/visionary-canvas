@@ -61,8 +61,9 @@ const Settings = () => {
   const initials = (displayName || user?.email || "U").charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-atmosphere relative">
+      <div className="absolute inset-0 bg-mesh opacity-30 pointer-events-none" />
+      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50 relative">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4" />
@@ -71,7 +72,7 @@ const Settings = () => {
         </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
+      <div className="max-w-3xl mx-auto px-6 py-10 space-y-8 relative">
         {/* Profile Section */}
         <div className="surface-elevated rounded-xl border border-border/50 p-6 space-y-6">
           <h2 className="text-lg font-semibold">Profile</h2>

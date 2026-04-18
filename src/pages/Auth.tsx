@@ -99,11 +99,13 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-atmosphere relative overflow-hidden">
+      <div className="aurora" />
+      <div className="noise-grain" />
       <Navigation />
-      <div className="min-h-screen flex items-center justify-center px-6 pt-20">
+      <div className="min-h-screen flex items-center justify-center px-6 pt-20 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-md">
-          <div className="surface-elevated rounded-2xl p-8 border border-border/50">
+          <div className="glass rounded-2xl p-8 border border-border/50 conic-border" data-active="true">
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold mb-2">{isSignUp ? "Create an account" : "Welcome back"}</h1>
               <p className="text-muted-foreground">{isSignUp ? "Start building with AIKO today" : "Sign in to your account to continue"}</p>
