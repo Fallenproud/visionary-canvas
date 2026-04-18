@@ -112,7 +112,7 @@ const About = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="text-center"
               >
-                <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary to-surface-elevated border border-border/40 flex items-center justify-center mx-auto mb-4 glow-accent-sm">
                   <value.icon className="w-8 h-8 text-accent" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
