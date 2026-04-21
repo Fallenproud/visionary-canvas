@@ -1,78 +1,113 @@
 
 
-# Visual Polish & Brand Elevation Sprint
+# Project Documentation Sprint
 
 ## Goal
-Elevate the entire platform's visual fidelity to a top-tier, futuristic SaaS aesthetic — without changing any structure, layout, routing, or functionality. Pure GFX/UX refinement.
+Generate three comprehensive markdown documents at the project root that capture the full state, architecture, and forward roadmap of the AIKO platform — written from a top-tier engineering/PM lens, no code changes anywhere.
 
-## Scope (visual only — zero structural changes)
+## Deliverables
 
-### 1. Brand System
-- **New SVG Logo**: Custom animated AIKO mark — geometric "A" formed by intersecting gradient strokes with subtle aurora shimmer. Replaces the current text-only "AIKO" wordmark across Navigation, Footer, Auth, Dashboard, Admin.
-- **Refined Color Tokens** (`src/index.css`): Introduce a richer accent system — primary indigo→violet→cyan tri-stop gradient, deeper surface blacks, refined border luminance. All HSL, all token-based.
-- **Favicon refresh**: Matching SVG favicon in `index.html`.
+### 1. `README.md` (rewrite)
+Replace the default Lovable boilerplate with a real product README:
+- **Hero**: AIKO tagline, live URLs (preview + published), one-line pitch
+- **What it is**: Dual-sided platform (Marketing site + AI App Builder at `/playground/:id`)
+- **Tech Stack**: React 18, Vite, TypeScript, Tailwind, shadcn/ui, Framer Motion, Sandpack, Supabase (Cloud), Lovable AI Gateway
+- **Feature Highlights**: AI chat agent, sandboxed IDE, snapshot versioning, workflow canvas, admin control center, mock payments, role-based auth
+- **Quick Start**: clone / install / dev / env vars (auto-managed by Cloud)
+- **Project Structure**: top-level tree with one-line descriptions
+- **Scripts**: dev, build, preview, lint
+- **Deployment**: Lovable publish flow + custom domain note
+- **Links**: Architecture doc, TODO doc, Lovable docs
 
-### 2. Futuristic Atmospheric Effects (`src/index.css` utilities)
-- **Aurora gradient blobs**: Slow-drifting animated radial gradients for hero/page backgrounds
-- **Noise grain overlay**: Subtle film-grain SVG texture utility for depth
-- **Conic shimmer**: Rotating conic-gradient utility for premium card borders
-- **Animated mesh enhancement**: Upgrade existing `.bg-mesh` with breathing animation
-- **Glow-on-hover**: Refined `.glow-accent` with multi-layer shadows
-- **Gradient text upgrade**: Tri-stop animated gradient for headlines
-- New keyframes: `aurora-drift`, `gradient-shift`, `border-shimmer`, `breathe`
+### 2. `PLATFORM-ARCHITECTURE.md` (new)
+Deep technical architecture reference:
+- **System Overview**: ASCII diagram of Marketing → Auth → Dashboard → Playground → Admin flow
+- **Frontend Architecture**:
+  - Routing map (App.tsx) with protected vs public routes
+  - State management (React Query + Context: Auth)
+  - Component layers (pages → feature components → ui primitives)
+  - Lazy loading strategy + ErrorBoundary + Suspense
+- **Backend Architecture (Lovable Cloud / Supabase)**:
+  - Database schema table (profiles, projects, project_files, project_snapshots, conversations, messages, user_roles)
+  - RLS policy summary per table
+  - `has_role` security-definer function + `app_role` enum
+  - Edge functions catalog: `aiko-chat`, `admin-stats`, `admin-users`, `admin-manage-role` (purpose, auth model, inputs/outputs)
+- **AI System**: Lovable AI Gateway, sub-agent architecture, Plan/Agent modes, file change pipeline
+- **IDE / Playground**: Sandpack 2-pane layout, file tree, chat panel, snapshot/version system
+- **Admin Control Center**: 4 tabs (Overview / Users / Projects / System), live API health checker, role delegation flow
+- **Auth Flow**: Email + Google OAuth, password strength, reset flow, role gating
+- **Payments**: MockCheckoutDialog staging → planned Stripe integration path
+- **Design System**: Token-based HSL palette, aurora atmosphere utilities (`aurora`, `noise-grain`, `conic-border`, `bg-mesh`), keyframes (`aurora-drift`, `gradient-shift`, `border-shimmer`, `breathe`), Framer Motion micro-interactions, animated SVG Logo
+- **Security Model**: RLS-first, service-role only in edge functions, self-demotion + last-admin protections, no client-side admin checks
+- **Performance**: Lazy routes, GPU-only animations, prefers-reduced-motion respect, React Query caching
+- **Locked Scaffold**: list of files that must not be edited
 
-### 3. Micro-interaction Polish (Framer Motion — already installed)
-- **Navigation**: Logo entrance animation, smoother dropdown spring physics, magnetic hover on CTA
-- **Hero**: Refined stagger, parallax on phone mockup, animated gradient orb behind headline
-- **Features cards**: Upgraded tilt with glow trail on hover, icon micro-bounce
-- **Pricing cards**: Border shimmer on featured plan, scale-spring on hover
-- **Stats**: Smoother count-up easing, subtle glow on numbers
-- **Buttons**: Add ripple/shine sweep on primary buttons (CSS only, via button variant)
+### 3. `TODO.md` (new)
+Organized checklist using ✔️ for done and ☐ for pending, grouped by domain:
 
-### 4. Page-Level Refinements (visual only, no layout shifts)
-- **Auth page**: Aurora background, glass card upgrade, animated logo
-- **Dashboard**: Subtle gradient mesh background, refined project card hover state with conic border
-- **Admin panel**: Tab indicator glow, KPI cards with gradient accent borders, status dot pulse
-- **Settings**: Section dividers with gradient hairlines
-- **Footer**: Gradient top-border, animated social icons
-- **NotFound/Privacy/Terms**: Matching atmospheric background
+```
+## ✅ Completed
+- ✔️ Marketing site (Hero, Features, Pricing, Stats, Footer, About)
+- ✔️ Authentication (email + Google OAuth, reset password)
+- ✔️ Dashboard with project CRUD
+- ✔️ Playground IDE (Sandpack, chat, file tree)
+- ✔️ AIKO chat agent (8 sub-agents, Plan/Agent modes)
+- ✔️ Snapshot versioning system
+- ✔️ Workflow canvas
+- ✔️ Admin Control Center (Overview / Users / Projects / System)
+- ✔️ Live API health checker (18 endpoints, 6 categories)
+- ✔️ Role delegation (user / moderator / admin) with safeguards
+- ✔️ Mock payment gateway staging
+- ✔️ Visual polish sprint (aurora theme, animated Logo, gradient tokens)
+- ✔️ Theme applied across all pages (Playground, About, ResetPassword, etc.)
 
-### 5. Performance & Motion Hygiene
-- All animations respect `prefers-reduced-motion`
-- GPU-accelerated transforms only (no layout-triggering props)
-- Lazy-paint heavy effects (aurora blobs use `will-change` sparingly)
-- Zero new packages — all effects via CSS + existing Framer Motion
+## 🚧 In Progress / Next Up
+- ☐ Walk-through QA across every page
 
-## Files Touched (visual-only edits)
+## 🎯 High-Priority Roadmap
+- ☐ Real Stripe checkout (replace MockCheckoutDialog)
+- ☐ Stripe webhooks → plan sync
+- ☐ Customer portal for subscription management
+- ☐ Light/dark theme toggle in profile dropdown
+- ☐ OG / Twitter card images + meta tags
 
-| File | Change |
+## 💡 Nice-to-Have Enhancements
+- ☐ Animated cursor spotlight on hero/auth
+- ☐ Auto-refresh interval for admin health checks
+- ☐ Real-time activity feed in Admin Overview
+- ☐ Projects tab: search + pagination
+- ☐ Email notifications (transactional)
+- ☐ Team/workspace collaboration
+- ☐ Project templates marketplace
+- ☐ Export project as ZIP / GitHub push
+- ☐ Mobile-optimized Playground layout
+- ☐ Keyboard shortcuts overlay
+- ☐ Onboarding tour for new users
+
+## 🔒 Security & Hardening
+- ☐ Rate limiting on edge functions
+- ☐ Audit log table for admin actions
+- ☐ 2FA support
+- ☐ Session device management
+
+## 📊 Analytics & Observability
+- ☐ Product analytics (PostHog / Plausible)
+- ☐ Error tracking (Sentry)
+- ☐ Performance monitoring dashboard
+```
+
+## Files Touched
+| File | Action |
 |------|--------|
-| `src/index.css` | New tokens, aurora/grain/shimmer utilities, keyframes |
-| `index.html` | New SVG favicon |
-| `src/components/Logo.tsx` | **NEW** — animated SVG brand mark |
-| `src/components/Navigation.tsx` | Swap wordmark → `<Logo/>`, polish dropdown motion |
-| `src/components/Hero.tsx` | Aurora orb, refined gradient headline |
-| `src/components/Features.tsx` | Upgraded card hover (glow trail) |
-| `src/components/Pricing.tsx` | Featured-plan shimmer border |
-| `src/components/Stats.tsx` | Number glow accent |
-| `src/components/Footer.tsx` | Gradient hairline + Logo |
-| `src/components/ui/button.tsx` | Add subtle shine on `default` variant |
-| `src/pages/Auth.tsx` | Aurora bg + Logo |
-| `src/pages/Dashboard.tsx` | Mesh bg, refined card hover |
-| `src/pages/Admin.tsx` | Tab indicator glow |
-| `src/components/admin/AdminOverview.tsx` | Gradient KPI accents |
-| `src/pages/Settings.tsx` | Gradient section dividers |
-| `src/pages/NotFound.tsx` | Atmospheric bg |
-| `src/pages/Privacy.tsx` / `src/pages/Terms.tsx` | Matching bg |
+| `README.md` | REWRITE |
+| `PLATFORM-ARCHITECTURE.md` | CREATE |
+| `TODO.md` | CREATE |
 
-## What this does NOT touch
-- ❌ No routing changes
-- ❌ No component prop/API changes
-- ❌ No layout/structure rewrites
-- ❌ No backend / edge function / DB changes
-- ❌ No new packages
-- ❌ No removed features — every existing button, link, flow stays identical
+## Does NOT Touch
+- ❌ No source code changes
+- ❌ No backend / DB / edge function changes
+- ❌ No package or config changes
+- ❌ No routing / component / styling changes
 
-## Outcome
-A cohesive, futuristic, "wow"-tier visual identity — aurora atmospherics, animated brand mark, premium micro-interactions, gradient-rich surfaces — while preserving the exact current architecture and user flows.
+Pure documentation deliverable.
 
