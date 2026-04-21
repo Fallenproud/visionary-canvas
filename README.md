@@ -1,73 +1,103 @@
-# Welcome to your Lovable project
+# AIKO — AI-Native App Builder
 
-## Project info
+> Build production-ready apps by chatting with an AI agent. Marketing site + sandboxed IDE + admin control center, all in one platform.
 
-**URL**: https://lovable.dev/projects/1648d44e-1ef1-4f65-b8bd-039a850d7805
+**Live:** [aikov.lovable.app](https://aikov.lovable.app) · **Preview:** [id-preview--…lovable.app](https://id-preview--1648d44e-1ef1-4f65-b8bd-039a850d7805.lovable.app) · **Lovable Project:** [Open in Lovable](https://lovable.dev/projects/1648d44e-1ef1-4f65-b8bd-039a850d7805)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## What it is
 
-**Use Lovable**
+AIKO is a **dual-sided platform**:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1648d44e-1ef1-4f65-b8bd-039a850d7805) and start prompting.
+1. **Marketing Site** — Landing, pricing, about, auth, dashboard. The public face.
+2. **AI App Builder** (`/playground/:id`) — A Sandpack-powered in-browser IDE where users chat with the **AIKO** AI agent (8 specialized sub-agents) to scaffold, edit, and ship React/React-Native apps. Includes snapshot-based version control and a visual workflow canvas.
+3. **Admin Control Center** (`/admin`) — Full platform observability: live KPIs, user management, role delegation, project oversight, and a real-time API health checker covering every endpoint end-to-end.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
 
-**Use your preferred IDE**
+| Layer | Stack |
+|---|---|
+| Frontend | React 18 · Vite 5 · TypeScript 5 · Tailwind CSS v3 · shadcn/ui |
+| Motion | Framer Motion · custom CSS aurora/grain/conic utilities |
+| IDE | Sandpack (CodeSandbox) |
+| State | TanStack Query · React Context (Auth) |
+| Backend | **Lovable Cloud** (Supabase: Postgres + Auth + Edge Functions + Storage + Realtime) |
+| AI | **Lovable AI Gateway** (Gemini 3 Flash / Pro, GPT-5 family) |
+| Auth | Email/password + Google OAuth + password reset |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Feature Highlights
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- 🤖 **AIKO chat agent** with 8 sub-agents (architect, ui_builder, logic, debug, review, devops, security, testing) and Plan/Agent dual modes
+- 💻 **Sandboxed IDE** — file tree, code editor, live preview, diff viewer
+- 📸 **Snapshot versioning** — revert any project to any prior state
+- 🔀 **Workflow canvas** — node-based diagrams for app flows
+- 🛡️ **Admin Control Center** — overview, users, projects, system health (18-endpoint live checker)
+- 👥 **Role-based access** — `user` / `moderator` / `admin` with self-demotion + last-admin protections
+- 💳 **Mock payment gateway** — staging-ready, drop-in Stripe path
+- 🎨 **Aurora design system** — animated SVG logo, gradient tokens, atmospheric backgrounds, Framer micro-interactions
 
-Follow these steps:
+## Quick Start
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+cd aiko
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Environment variables (`.env`) are **auto-managed by Lovable Cloud** — you do not need to configure Supabase manually:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_PROJECT_ID`
 
-**Use GitHub Codespaces**
+## Project Structure
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+.
+├── public/                      Static assets, favicon
+├── src/
+│   ├── components/              Feature components
+│   │   ├── admin/               Admin tabs (Overview/Users/Projects/System)
+│   │   ├── playground/          IDE: ChatPanel, FileTree, CodeViewer, etc.
+│   │   └── ui/                  shadcn/ui primitives
+│   ├── contexts/                AuthContext
+│   ├── hooks/                   useChat, useProject, useIsAdmin, useAdminStats…
+│   ├── integrations/            Auto-generated Supabase client + types (locked)
+│   ├── lib/                     Utilities (chat-formatter, code-parser, templates…)
+│   ├── pages/                   Index, Auth, Dashboard, Playground, Admin, Settings…
+│   ├── types/                   Shared TS types
+│   ├── index.css                Design tokens + aurora utilities + keyframes
+│   └── App.tsx                  Router + providers
+├── supabase/
+│   ├── functions/               Edge functions (aiko-chat, admin-*)
+│   ├── migrations/              DB migrations (locked)
+│   └── config.toml              Project config
+├── PLATFORM-ARCHITECTURE.md     Deep technical reference
+├── TODO.md                      Roadmap checklist
+└── README.md
+```
 
-## What technologies are used for this project?
+## Scripts
 
-This project is built with:
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Start Vite dev server with HMR |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | ESLint |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Deployment
 
-## How can I deploy this project?
+Open the [Lovable project](https://lovable.dev/projects/1648d44e-1ef1-4f65-b8bd-039a850d7805) → **Share → Publish**. Custom domains: **Project → Settings → Domains → Connect Domain** ([docs](https://docs.lovable.dev/features/custom-domain)).
 
-Simply open [Lovable](https://lovable.dev/projects/1648d44e-1ef1-4f65-b8bd-039a850d7805) and click on Share -> Publish.
+## Documentation
 
-## Can I connect a custom domain to my Lovable project?
+- 📐 [**PLATFORM-ARCHITECTURE.md**](./PLATFORM-ARCHITECTURE.md) — Full system architecture, schema, security model
+- ✅ [**TODO.md**](./TODO.md) — Completed work + forward roadmap
+- 📚 [Lovable Docs](https://docs.lovable.dev)
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Built with ❤️ on [Lovable](https://lovable.dev).
