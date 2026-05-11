@@ -124,7 +124,7 @@ Living document. ✔️ = done · ☐ = pending. See [PLATFORM-ARCHITECTURE.md](
 
 ### Admin
 - ☐ Auto-refresh interval for health checker (configurable)
-- ☐ Real-time activity feed in Overview (Supabase Realtime)
+- ✔️ Real-time activity feed in Overview (Supabase Realtime)
 - ☐ Projects tab: search + pagination
 - ☐ Export users / projects to CSV
 - ☐ Bulk role operations
