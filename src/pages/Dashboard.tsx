@@ -19,6 +19,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Logo } from "@/components/Logo";
+import { CursorSpotlight } from "@/components/effects/CursorSpotlight";
 
 type SortKey = "updated" | "name" | "status";
 
@@ -83,6 +84,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <CursorSpotlight />
       <div className="absolute inset-0 bg-mesh opacity-50 pointer-events-none" />
       {/* Top bar */}
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50 relative">
