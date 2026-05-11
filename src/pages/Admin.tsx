@@ -14,6 +14,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [tab, setTab] = useState("overview");
 
   useEffect(() => {
     if (!user) return;
@@ -61,7 +62,7 @@ const Admin = () => {
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 py-6 relative">
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={tab} onValueChange={setTab} className="space-y-6">
           <TabsList className="bg-muted/50 backdrop-blur-sm">
             <TabsTrigger value="overview" className="gap-1.5 text-xs data-[state=active]:shadow-[0_0_20px_-5px_hsl(217_91%_60%/0.5)]">
               <LayoutDashboard className="w-3.5 h-3.5" />
@@ -82,7 +83,7 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="overview">
-            <AdminOverview />
+            <AdminOverview onNavigate={setTab} />
           </TabsContent>
           <TabsContent value="users">
             <AdminUsers />

@@ -8,8 +8,14 @@ import {
   TrendingUp,
   Clock,
 } from "lucide-react";
+import AdminActivityFeed from "./AdminActivityFeed";
+import AdminQuickActions from "./AdminQuickActions";
 
-const AdminOverview = () => {
+interface AdminOverviewProps {
+  onNavigate?: (tab: string) => void;
+}
+
+const AdminOverview = ({ onNavigate }: AdminOverviewProps) => {
   const { data, isLoading, error } = useAdminStats();
 
   if (error) {
@@ -33,6 +39,9 @@ const AdminOverview = () => {
 
   return (
     <div className="space-y-8">
+      {/* Quick Actions */}
+      <AdminQuickActions onNavigate={(tab) => onNavigate?.(tab)} />
+
       {/* KPI Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {isLoading
@@ -155,6 +164,9 @@ const AdminOverview = () => {
           </div>
         </div>
       )}
+
+      {/* Realtime Activity Feed */}
+      <AdminActivityFeed />
     </div>
   );
 };
