@@ -118,9 +118,9 @@ Living document. ✔️ = done · ☐ = pending. See [PLATFORM-ARCHITECTURE.md](
 ## 💡 Nice-to-Have Enhancements
 
 ### Visual / Motion
-- ☐ Animated cursor spotlight on hero/auth/dashboard
-- ☐ Page transition animations between routes
-- ☐ Scroll-driven parallax on landing
+- ✔️ Animated cursor spotlight on hero/auth/dashboard
+- ✔️ Page transition animations between routes
+- ✔️ Scroll-driven parallax on landing
 
 ### Admin
 - ☐ Auto-refresh interval for health checker (configurable)
