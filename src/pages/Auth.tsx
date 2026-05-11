@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Github } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { lovable } from "@/integrations/lovable/index";
+import { CursorSpotlight } from "@/components/effects/CursorSpotlight";
 
 const authSchema = z.object({
   email: z.string().trim().email({ message: "Invalid email address" }).max(255),
@@ -100,6 +101,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-atmosphere relative overflow-hidden">
+      <CursorSpotlight />
       <div className="aurora" />
       <div className="noise-grain" />
       <Navigation />
