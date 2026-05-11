@@ -164,6 +164,9 @@ const AdminOverview = ({ onNavigate }: AdminOverviewProps) => {
           </div>
         </div>
       )}
+
+      {/* Realtime Activity Feed */}
+      <AdminActivityFeed />
     </div>
   );
 };
