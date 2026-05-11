@@ -6,18 +6,23 @@ import { useState } from "react";
 import { VideoModal } from "./VideoModal";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { CursorSpotlight } from "@/components/effects/CursorSpotlight";
+import { useScrollParallax } from "@/hooks/useScrollParallax";
 
 export const Hero = () => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const auroraRef = useScrollParallax<HTMLDivElement>(0.25);
+  const meshRef = useScrollParallax<HTMLDivElement>(0.12);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6 py-20 overflow-hidden">
+      <CursorSpotlight />
       <VideoModal open={isVideoOpen} onOpenChange={setIsVideoOpen} />
 
       {/* Aurora atmospheric blobs */}
-      <div className="aurora" />
+      <div ref={auroraRef} className="aurora" />
 
       {/* Grid pattern */}
       <div className="absolute inset-0 bg-grid opacity-20" />
@@ -26,7 +31,7 @@ export const Hero = () => {
       <div className="absolute inset-0 spotlight" />
 
       {/* Mesh gradient overlay */}
-      <div className="absolute inset-0 bg-mesh" />
+      <div ref={meshRef} className="absolute inset-0 bg-mesh" />
 
       {/* Noise grain */}
       <div className="noise-grain" />
